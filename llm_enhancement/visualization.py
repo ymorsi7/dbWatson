@@ -7,8 +7,8 @@ from typing import List, Dict, Any
 
 class EnhancedVisualizer:
     def __init__(self):
-        """Initialize visualizer with modern theme."""
-        self.theme = 'plotly_dark'
+        """Initialize the visualizer."""
+        self.theme = 'plotly_white'  # Set default theme
         self.colors = px.colors.qualitative.Set3
         
     def plot_metric_comparison(self, normal_metrics: pd.DataFrame, 

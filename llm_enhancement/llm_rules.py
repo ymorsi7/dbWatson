@@ -192,7 +192,6 @@ class RuleEvaluator:
         """Evaluate rule effectiveness using statistical measures."""
         results = {}
         
-        # Validate rules format
         if not rules:
             print("Warning: No rules provided for evaluation")
             return results
@@ -212,21 +211,19 @@ class RuleEvaluator:
             print("No valid rules found for evaluation")
             return results
         
-        # Select only numeric columns for scaling
-        numeric_columns = metrics_df.select_dtypes(include=[np.number]).columns
-        metrics = metrics_df[numeric_columns]
-        
-        # Now scale only the numeric data
-        scaled_metrics = self.scaler.fit_transform(metrics)
+        # Convert numpy array back to DataFrame for rule evaluation
+        metrics = pd.DataFrame(metrics_df)
         
         for rule in valid_rules:
             try:
+                # Replace df[] with actual DataFrame reference
+                condition = rule['condition'].replace('df[', 'metrics[')
                 # Apply rule condition
-                mask = eval(rule['condition'], {'df': scaled_metrics, 'np': np})
+                mask = eval(condition, {'metrics': metrics, 'np': np})
                 
                 # Calculate rule effectiveness metrics
-                precision = self._calculate_precision(mask, metrics_df)
-                recall = self._calculate_recall(mask, metrics_df)
+                precision = self._calculate_precision(mask, metrics)
+                recall = self._calculate_recall(mask, metrics)
                 f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
                 
                 results[rule['name']] = {
@@ -254,19 +251,3 @@ class RuleEvaluator:
         # This is a simplified version - in practice, you'd need actual anomaly labels
         return np.sum(predicted_anomalies) / len(metrics) 
 
-    def plot_rule_effectiveness(self, rule_metrics: Dict[str, Dict[str, float]]) -> go.Figure:
-        """Create an interactive bar plot showing rule effectiveness metrics."""
-        if not rule_metrics:
-            # Return empty figure if no metrics
-            fig = go.Figure()
-            fig.update_layout(
-                title="No Rule Metrics Available",
-                template=self.theme
-            )
-            return fig
-        
-        rules = list(rule_metrics.keys())
-        metrics = ['precision', 'recall', 'f1_score']
-        
-        fig = go.Figure()
-        
