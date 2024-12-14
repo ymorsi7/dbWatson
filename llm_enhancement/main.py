@@ -85,7 +85,8 @@ class DBSherlockEnhanced:
             for j in range(test_datasets.shape[1]):  # 11 time durations
                 if test_datasets[i,j].size > 0:
                     metrics = test_datasets[i,j]
-                    data = metrics.get('data', [])
+                    data = metrics if isinstance(metrics, np.ndarray) else metrics.data
+                    
                     if len(data) > 0:
                         # Add metadata
                         metrics_dict = {
@@ -96,7 +97,7 @@ class DBSherlockEnhanced:
                         }
                         
                         # Add metrics using field names if available
-                        field_names = metrics.get('field_names', [])
+                        field_names = matlab_data.get('field_names', [])
                         for k, value in enumerate(data[0]):
                             field_name = field_names[k] if k < len(field_names) else f'metric_{k}'
                             metrics_dict[field_name] = value
