@@ -20,8 +20,16 @@ class DBSherlockEnhanced:
         self.llm_enhancer = LLMRuleEnhancer(openai_api_key)
         self.rule_evaluator = RuleEvaluator()
         self.visualizer = EnhancedVisualizer()
-        self.matlab_engine = matlab.engine.start_matlab()
-        self.matlab_engine.addpath(matlab_workspace)
+        
+        # Initialize MATLAB engine with proper error handling
+        try:
+            self.matlab_engine = matlab.engine.start_matlab()
+            self.matlab_engine.addpath(matlab_workspace)
+            # Add the scripts directory to MATLAB path
+            scripts_path = os.path.join(matlab_workspace, 'scripts')
+            self.matlab_engine.addpath(scripts_path)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize MATLAB engine: {str(e)}")
         
     def process_dataset(self, dataset_path: str, output_dir: str) -> Dict[str, Any]:
         """Process a dataset through the enhanced pipeline.
@@ -68,18 +76,60 @@ class DBSherlockEnhanced:
     
     def _convert_to_pandas(self, matlab_data: Dict[str, Any]) -> pd.DataFrame:
         """Convert MATLAB data structure to pandas DataFrame."""
-        # Extract relevant metrics and convert to DataFrame
-        # This needs to be adapted based on your specific data structure
-        metrics = matlab_data['test_datasets']
-        column_names = [f'metric_{i}' for i in range(metrics.shape[1])]
-        return pd.DataFrame(metrics, columns=column_names)
+        test_datasets = matlab_data['test_datasets']
+        metrics_list = []
+        causes = matlab_data['causes']
+        
+        # Iterate through the cell structure
+        for i in range(test_datasets.shape[0]):  # 10 test cases
+            for j in range(test_datasets.shape[1]):  # 11 time durations
+                if test_datasets[i,j].size > 0:
+                    metrics = test_datasets[i,j]
+                    data = metrics.get('data', [])
+                    if len(data) > 0:
+                        # Add metadata
+                        metrics_dict = {
+                            'test_case': i,
+                            'cause': causes[i][0] if i < len(causes) else f'unknown_{i}',
+                            'duration': 30 + (j * 5),  # 30 to 80 seconds in 5-second increments
+                            'is_normal': 0 if i in matlab_data['abnormal_regions'] else 1
+                        }
+                        
+                        # Add metrics using field names if available
+                        field_names = metrics.get('field_names', [])
+                        for k, value in enumerate(data[0]):
+                            field_name = field_names[k] if k < len(field_names) else f'metric_{k}'
+                            metrics_dict[field_name] = value
+                            
+                        metrics_list.append(metrics_dict)
+        
+        return pd.DataFrame(metrics_list)
     
     def _run_dbsherlock_analysis(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Run original DBSherlock analysis using MATLAB engine."""
         try:
-            # Call MATLAB functions through the engine
-            results = self.matlab_engine.run_dbsherlock(data)
-            return self._convert_matlab_rules(results)
+            # Convert Python data structure to MATLAB
+            matlab_data = {
+                'data': self.matlab_engine.double(data['test_datasets'].tolist()),
+                'field_names': data['field_names'],
+                'abnormal_regions': data['abnormal_regions'],
+                'normal_regions': data['normal_regions']
+            }
+            
+            # Create ExperimentParameter object in MATLAB
+            exp_param = self.matlab_engine.eval('ExperimentParameter')
+            
+            # Run DBSherlock analysis
+            results = self.matlab_engine.run_dbsherlock(
+                matlab_data, 
+                data['abnormal_regions'], 
+                data['normal_regions'],
+                [], # empty attribute_types
+                exp_param,
+                nargout=5  # Number of output arguments
+            )
+            
+            return self._convert_matlab_rules(results[0])  # Only take explanation results
         except Exception as e:
             print(f"Error running MATLAB analysis: {str(e)}")
             return []
@@ -104,27 +154,34 @@ class DBSherlockEnhanced:
                                enhanced_metrics: Dict[str, Dict[str, float]],
                                output_dir: str):
         """Generate and save all visualizations."""
-        # Create output directory if it doesn't exist
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
-        
-        # Generate metric comparison plot
-        fig_metrics = self.visualizer.plot_metric_comparison(
-            metrics_df[metrics_df['is_normal'] == 1],
-            metrics_df[metrics_df['is_normal'] == 0],
-            enhanced_rules
-        )
-        fig_metrics.write_html(os.path.join(output_dir, 'metric_comparison.html'))
-        
-        # Generate rule effectiveness comparison
-        fig_rules = self.visualizer.plot_rule_effectiveness({
-            'Original Rules': original_metrics,
-            'Enhanced Rules': enhanced_metrics
-        })
-        fig_rules.write_html(os.path.join(output_dir, 'rule_effectiveness.html'))
-        
-        # Generate correlation matrix
-        fig_corr = self.visualizer.plot_correlation_matrix(metrics_df)
-        fig_corr.write_html(os.path.join(output_dir, 'correlation_matrix.html'))
+        try:
+            Path(output_dir).mkdir(parents=True, exist_ok=True)
+            
+            # Check if required columns exist
+            if 'is_normal' not in metrics_df.columns:
+                metrics_df['is_normal'] = 0  # Default to abnormal
+                
+            # Generate visualizations
+            fig_metrics = self.visualizer.plot_metric_comparison(
+                metrics_df[metrics_df['is_normal'] == 1],
+                metrics_df[metrics_df['is_normal'] == 0],
+                enhanced_rules
+            )
+            fig_metrics.write_html(os.path.join(output_dir, 'metric_comparison.html'))
+            
+            # Generate rule effectiveness comparison
+            fig_rules = self.visualizer.plot_rule_effectiveness({
+                'Original Rules': original_metrics,
+                'Enhanced Rules': enhanced_metrics
+            })
+            fig_rules.write_html(os.path.join(output_dir, 'rule_effectiveness.html'))
+            
+            # Generate correlation matrix
+            fig_corr = self.visualizer.plot_correlation_matrix(metrics_df)
+            fig_corr.write_html(os.path.join(output_dir, 'correlation_matrix.html'))
+            
+        except Exception as e:
+            print(f"Error generating visualizations: {str(e)}")
     
     def _save_results(self, results: Dict[str, Any], output_dir: str):
         """Save analysis results to files."""
