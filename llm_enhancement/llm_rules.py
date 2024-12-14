@@ -4,6 +4,7 @@ import openai
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import json
+import plotly.graph_objects as go
 
 class LLMRuleEnhancer:
     def __init__(self, api_key: str):
@@ -104,21 +105,41 @@ class LLMRuleEnhancer:
             rules.append(current_rule)
             
         return rules
+    
+    def _convert_matlab_rules(self, matlab_results: Any) -> List[Dict[str, Any]]:
+        """Convert MATLAB rule format to our enhanced format."""
+        rules = []
+        try:
+            for rule in matlab_results:
+                # Convert and validate each field
+                name = str(rule[0]) if rule[0] is not None else "Unknown Rule"
+                condition = str(rule[1]) if rule[1] is not None else ""
+                confidence = float(rule[2]) if rule[2] is not None else 0.0
+                
+                rules.append({
+                    'name': name,
+                    'condition': condition,
+                    'confidence': confidence
+                })
+        except Exception as e:
+            print(f"Error converting MATLAB rules: {str(e)}")
+        return rules
 
 class RuleEvaluator:
     def __init__(self):
         """Initialize the Rule Evaluator."""
         self.scaler = StandardScaler()
         
-    def evaluate_rules(self, metrics: pd.DataFrame, rules: List[Dict[str, Any]]) -> Dict[str, float]:
+    def evaluate_rules(self, metrics_df: pd.DataFrame, rules: List[Dict[str, Any]]) -> Dict[str, Dict[str, float]]:
         """Evaluate rule effectiveness using statistical measures."""
         results = {}
         
-        # Scale metrics for consistent evaluation
-        scaled_metrics = pd.DataFrame(
-            self.scaler.fit_transform(metrics),
-            columns=metrics.columns
-        )
+        # Select only numeric columns for scaling
+        numeric_columns = metrics_df.select_dtypes(include=[np.number]).columns
+        metrics = metrics_df[numeric_columns]
+        
+        # Now scale only the numeric data
+        scaled_metrics = self.scaler.fit_transform(metrics)
         
         for rule in rules:
             try:
@@ -126,8 +147,8 @@ class RuleEvaluator:
                 mask = eval(rule['condition'], {'df': scaled_metrics, 'np': np})
                 
                 # Calculate rule effectiveness metrics
-                precision = self._calculate_precision(mask, metrics)
-                recall = self._calculate_recall(mask, metrics)
+                precision = self._calculate_precision(mask, metrics_df)
+                recall = self._calculate_recall(mask, metrics_df)
                 f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
                 
                 results[rule['name']] = {
@@ -154,3 +175,20 @@ class RuleEvaluator:
         """Calculate recall of rule predictions."""
         # This is a simplified version - in practice, you'd need actual anomaly labels
         return np.sum(predicted_anomalies) / len(metrics) 
+
+    def plot_rule_effectiveness(self, rule_metrics: Dict[str, Dict[str, float]]) -> go.Figure:
+        """Create an interactive bar plot showing rule effectiveness metrics."""
+        if not rule_metrics:
+            # Return empty figure if no metrics
+            fig = go.Figure()
+            fig.update_layout(
+                title="No Rule Metrics Available",
+                template=self.theme
+            )
+            return fig
+        
+        rules = list(rule_metrics.keys())
+        metrics = ['precision', 'recall', 'f1_score']
+        
+        fig = go.Figure()
+        
