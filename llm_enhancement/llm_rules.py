@@ -134,6 +134,20 @@ class RuleEvaluator:
         """Evaluate rule effectiveness using statistical measures."""
         results = {}
         
+        # Validate rules format
+        if not rules:
+            print("Warning: No rules provided for evaluation")
+            return results
+        
+        # Validate each rule has required fields
+        for i, rule in enumerate(rules):
+            if not isinstance(rule, dict):
+                print(f"Warning: Rule {i} is not a dictionary")
+                continue
+            if 'name' not in rule or 'condition' not in rule:
+                print(f"Warning: Rule {i} is missing required fields (name and/or condition)")
+                continue
+            
         # Select only numeric columns for scaling
         numeric_columns = metrics_df.select_dtypes(include=[np.number]).columns
         metrics = metrics_df[numeric_columns]
