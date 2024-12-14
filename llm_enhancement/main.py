@@ -106,6 +106,7 @@ class DBSherlockEnhanced:
         
         return pd.DataFrame(metrics_list)
     
+
     def _run_dbsherlock_analysis(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Run original DBSherlock analysis using MATLAB engine."""
         try:

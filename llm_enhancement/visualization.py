@@ -6,50 +6,86 @@ import numpy as np
 from typing import List, Dict, Any
 
 class EnhancedVisualizer:
-    def __init__(self, theme: str = 'plotly_dark'):
-        """Initialize the Enhanced Visualizer.
+    def __init__(self):
+        """Initialize visualizer with modern theme."""
+        self.theme = 'plotly_dark'
+        self.colors = px.colors.qualitative.Set3
         
-        Args:
-            theme: Plotly theme to use for plots
-        """
-        self.theme = theme
-        
-    def plot_metric_comparison(self, normal_metrics: pd.DataFrame, anomaly_metrics: pd.DataFrame,
-                             rules: List[Dict[str, Any]], title: str = "Metric Comparison") -> go.Figure:
-        """Create an interactive comparison plot of normal vs anomaly metrics with rule highlights."""
-        # Create subplots for each metric
-        n_metrics = len(normal_metrics.columns)
-        fig = make_subplots(rows=n_metrics, cols=1, subplot_titles=normal_metrics.columns,
+    def plot_metric_comparison(self, normal_metrics: pd.DataFrame, 
+                             anomaly_metrics: pd.DataFrame,
+                             rules: List[Dict[str, Any]]) -> go.Figure:
+        """Create an enhanced metric comparison visualization."""
+        fig = make_subplots(rows=len(normal_metrics.columns), cols=1,
+                           subplot_titles=normal_metrics.columns,
                            vertical_spacing=0.05)
         
         for i, metric in enumerate(normal_metrics.columns, 1):
-            # Plot normal data
+            # Add normal data with confidence intervals
+            normal_mean = normal_metrics[metric].rolling(5).mean()
+            normal_std = normal_metrics[metric].rolling(5).std()
+            
             fig.add_trace(
-                go.Scatter(x=normal_metrics.index, y=normal_metrics[metric],
-                          name=f"Normal {metric}", line=dict(color='blue', width=1)),
-                row=i, col=1
+                go.Scatter(
+                    x=normal_metrics.index,
+                    y=normal_mean,
+                    name=f"Normal {metric}",
+                    line=dict(color='blue', width=1)
+                ), row=i, col=1
             )
             
-            # Plot anomaly data
+            # Add confidence intervals
             fig.add_trace(
-                go.Scatter(x=anomaly_metrics.index, y=anomaly_metrics[metric],
-                          name=f"Anomaly {metric}", line=dict(color='red', width=1)),
-                row=i, col=1
+                go.Scatter(
+                    x=normal_metrics.index,
+                    y=normal_mean + 2*normal_std,
+                    fill=None,
+                    mode='lines',
+                    line=dict(width=0),
+                    showlegend=False
+                ), row=i, col=1
             )
             
-            # Add rule thresholds if applicable
-            for rule in rules:
-                if metric in rule['condition']:
-                    threshold = self._extract_threshold(rule['condition'], metric)
-                    if threshold:
-                        fig.add_hline(y=threshold, line_dash="dash", line_color="green",
-                                    annotation_text=f"Rule: {rule['name']}", row=i, col=1)
-        
+            fig.add_trace(
+                go.Scatter(
+                    x=normal_metrics.index,
+                    y=normal_mean - 2*normal_std,
+                    fill='tonexty',
+                    mode='lines',
+                    line=dict(width=0),
+                    name='95% Confidence',
+                    fillcolor='rgba(0, 0, 255, 0.1)'
+                ), row=i, col=1
+            )
+            
+            # Add anomaly points with hover info
+            fig.add_trace(
+                go.Scatter(
+                    x=anomaly_metrics.index,
+                    y=anomaly_metrics[metric],
+                    mode='markers',
+                    name=f"Anomaly {metric}",
+                    marker=dict(
+                        color='red',
+                        size=8,
+                        symbol='x'
+                    ),
+                    hovertemplate="Time: %{x}<br>" +
+                                f"{metric}: %{y:.2f}<br>" +
+                                "Anomaly<extra></extra>"
+                ), row=i, col=1
+            )
+
         fig.update_layout(
-            height=300 * n_metrics,
-            title_text=title,
+            height=300 * len(normal_metrics.columns),
+            template=self.theme,
             showlegend=True,
-            template=self.theme
+            title={
+                'text': "Metric Comparison with Anomaly Detection",
+                'y':0.95,
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+            }
         )
         
         return fig

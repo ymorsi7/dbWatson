@@ -11,8 +11,44 @@ class LLMRuleEnhancer:
         """Initialize the LLM Rule Enhancer with OpenAI API key."""
         openai.api_key = api_key
         self.system_prompt = """You are an expert system for analyzing database performance anomalies.
-        Given performance metrics and patterns, generate precise rules to explain anomalies.
-        Focus on actionable insights and clear explanations."""
+        Your task is to generate precise rules to detect and explain database performance anomalies.
+        
+        Rules should follow this structure:
+        {
+            "name": "Clear descriptive name",
+            "condition": "Python boolean expression using df[column_name]",
+            "explanation": "Detailed technical explanation",
+            "confidence": float between 0-1,
+            "severity": "HIGH|MEDIUM|LOW",
+            "remediation": "Steps to address the issue"
+        }
+        
+        Example rules:
+        [
+            {
+                "name": "High CPU Utilization Spike",
+                "condition": "df['cpu_usage'] > 0.85 and df['cpu_usage'].diff() > 0.2",
+                "explanation": "CPU usage spiked above 85% with a sudden increase of >20%",
+                "confidence": 0.95,
+                "severity": "HIGH",
+                "remediation": "Check for resource-intensive queries, consider query optimization"
+            },
+            {
+                "name": "Memory Pressure",
+                "condition": "df['memory_used'] / df['memory_total'] > 0.9 and df['swap_used'].rolling(3).mean().diff() > 0",
+                "explanation": "Memory usage >90% with increasing swap usage trend",
+                "confidence": 0.9,
+                "severity": "HIGH",
+                "remediation": "Increase available memory, optimize memory-intensive queries"
+            }
+        ]
+        
+        Focus on:
+        1. Statistical patterns and trends
+        2. Correlations between metrics
+        3. Rate of change and sudden spikes
+        4. Resource utilization thresholds
+        5. System bottlenecks"""
     
     def enhance_rules(self, metrics: pd.DataFrame, existing_rules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Enhance existing rules using LLM insights.
@@ -40,28 +76,50 @@ class LLMRuleEnhancer:
         
         # Parse and validate enhanced rules
         enhanced_rules = self._parse_llm_response(response.choices[0].message['content'])
+        print("Enhanced rules:", json.dumps(enhanced_rules, indent=2))  # Debug print
         return enhanced_rules
     
     def _prepare_context(self, metrics: pd.DataFrame, existing_rules: List[Dict[str, Any]]) -> str:
-        """Prepare context for LLM by combining metrics and existing rules."""
+        """Prepare enhanced context for LLM."""
+        # Get numeric columns first
+        numeric_columns = metrics.select_dtypes(include=[np.number]).columns
+        
         # Calculate statistical summaries
-        stats = metrics.describe()
+        stats = metrics[numeric_columns].describe()
+        correlations = metrics[numeric_columns].corr()
+        changes = metrics[numeric_columns].diff().describe()
         
-        # Format existing rules
-        rules_str = json.dumps(existing_rules, indent=2)
-        
+        # Identify top correlations
+        top_correlations = []
+        for col in correlations.columns:
+            corrs = correlations[col].sort_values(ascending=False)
+            top_correlations.extend([
+                f"{col} strongly correlated with {other_col} (r={corr:.2f})"
+                for other_col, corr in corrs.items()
+                if corr < 1.0 and abs(corr) > 0.7
+            ])
+
         context = f"""
-        Performance Metrics Summary:
+        Performance Metrics Analysis:
+        
+        Statistical Summary:
         {stats.to_string()}
         
-        Existing Rules:
-        {rules_str}
+        Rate of Change Analysis:
+        {changes.to_string()}
         
-        Please analyze these metrics and existing rules to:
-        1. Enhance rule precision by adding statistical thresholds
-        2. Add natural language explanations for each rule
-        3. Suggest new rules based on patterns in the metrics
-        4. Prioritize rules by their likelihood of identifying true anomalies
+        Key Correlations:
+        {chr(10).join(top_correlations)}
+        
+        Existing Rules:
+        {json.dumps(existing_rules, indent=2)}
+        
+        Please analyze these patterns to:
+        1. Generate precise anomaly detection rules
+        2. Consider both absolute values and rates of change
+        3. Include correlations between metrics
+        4. Provide clear remediation steps
+        5. Assign confidence levels based on statistical significance
         """
         return context
     
@@ -140,14 +198,20 @@ class RuleEvaluator:
             return results
         
         # Validate each rule has required fields
+        valid_rules = []
         for i, rule in enumerate(rules):
             if not isinstance(rule, dict):
                 print(f"Warning: Rule {i} is not a dictionary")
                 continue
             if 'name' not in rule or 'condition' not in rule:
-                print(f"Warning: Rule {i} is missing required fields (name and/or condition)")
+                print(f"Warning: Skipping rule {i} due to missing required fields: {rule}")
                 continue
-            
+            valid_rules.append(rule)
+        
+        if not valid_rules:
+            print("No valid rules found for evaluation")
+            return results
+        
         # Select only numeric columns for scaling
         numeric_columns = metrics_df.select_dtypes(include=[np.number]).columns
         metrics = metrics_df[numeric_columns]
@@ -155,7 +219,7 @@ class RuleEvaluator:
         # Now scale only the numeric data
         scaled_metrics = self.scaler.fit_transform(metrics)
         
-        for rule in rules:
+        for rule in valid_rules:
             try:
                 # Apply rule condition
                 mask = eval(rule['condition'], {'df': scaled_metrics, 'np': np})
