@@ -75,23 +75,19 @@ function response = call_openai(prompt)
         options = weboptions('HeaderFields', headers, 'MediaType', 'application/json');
         
         % Format the request body according to OpenAI's API specification
-        data = struct();
-        data.model = 'gpt-4-turbo-preview';
-        data.messages = [{...
-            'role', 'system', ...
-            'content', 'You are an AI assistant analyzing database metrics and patterns. Provide clear, concise rules that explain anomalies in the data.'
-        }; {
-            'role', 'user', ...
-            'content', prompt
-        }];
-        data.temperature = 0.7;
-        data.max_tokens = 1000;
+        messages = {
+            struct('role', 'system', 'content', 'You are an AI assistant analyzing database metrics and patterns. Provide clear, concise rules that explain anomalies in the data.')
+            struct('role', 'user', 'content', prompt)
+        };
         
-        % Convert the data to JSON string manually to ensure proper formatting
-        json_str = jsonencode(data);
+        data = struct(...
+            'model', 'gpt-4-turbo-preview', ...
+            'messages', {messages}, ...
+            'temperature', 0.7, ...
+            'max_tokens', 1000);
         
-        % Make the API call
-        response = webwrite('https://api.openai.com/v1/chat/completions', json_str, options);
+        % Make the API call with the struct directly
+        response = webwrite('https://api.openai.com/v1/chat/completions', data, options);
         
         % Extract the response content
         if isfield(response, 'choices') && ~isempty(response.choices) && isfield(response.choices(1), 'message')
@@ -105,7 +101,7 @@ function response = call_openai(prompt)
             warning('SSL verification failed. Attempting with verification disabled...');
             options = weboptions('HeaderFields', headers, 'CertificateFilename', '', 'MediaType', 'application/json');
             
-            response = webwrite('https://api.openai.com/v1/chat/completions', json_str, options);
+            response = webwrite('https://api.openai.com/v1/chat/completions', data, options);
             if isfield(response, 'choices') && ~isempty(response.choices) && isfield(response.choices(1), 'message')
                 response = response.choices(1).message.content;
             else
