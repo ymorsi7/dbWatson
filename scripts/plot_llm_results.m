@@ -1,19 +1,22 @@
 function plot_llm_results(confidence, fscore)
     figure('Name', 'LLM-Enhanced Analysis Results');
     
+    % Create subplot for confidence scores
     subplot(2,1,1);
-    bar(confidence);
-    title('Confidence Scores');
-    ylabel('Confidence (%)');
-    xlabel('Case Number');
-    ylim([0 100]);
+    histogram(confidence, 'Normalization', 'probability');
+    title('Distribution of Confidence Scores');
+    xlabel('Confidence Score (%)');
+    ylabel('Frequency');
     
+    % Create subplot for F-scores
     subplot(2,1,2);
-    bar(fscore);
-    title('F1-Scores');
-    ylabel('F1-Score (%)');
-    xlabel('Case Number');
-    ylim([0 100]);
+    histogram(fscore, 'Normalization', 'probability');
+    title('Distribution of F-scores');
+    xlabel('F-score');
+    ylabel('Frequency');
+    
+    % Adjust layout
+    sgtitle('DBSherlock LLM-Enhanced Performance Metrics');
 end 
 
 function plot_combined_results(conf_llm, fscore_llm)

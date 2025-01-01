@@ -1,25 +1,18 @@
-function enhanced_rules = combine_rules(template_rules, learned_patterns)
-    enhanced_rules = struct();
-    fields = fieldnames(template_rules);
+function combined_rules = combine_rules(template_rules, historical_patterns)
+    combined_rules = struct();
     
-    for i = 1:length(fields)
-        field = fields{i};
-        if isfield(learned_patterns, field)
-            enhanced_rules.(field) = struct(...
-                'metrics', template_rules.(field).metrics,...
-                'pattern', combine_patterns(template_rules.(field).pattern, learned_patterns.(field).pattern),...
-                'confidence', max(template_rules.(field).confidence, learned_patterns.(field).confidence)...
-            );
-        else
-            enhanced_rules.(field) = template_rules.(field);
-        end
+    % Merge template rules
+    field_names = fieldnames(template_rules);
+    for i = 1:length(field_names)
+        combined_rules.(field_names{i}) = template_rules.(field_names{i});
     end
     
-    learned_fields = fieldnames(learned_patterns);
-    for i = 1:length(learned_fields)
-        field = learned_fields{i};
-        if ~isfield(enhanced_rules, field)
-            enhanced_rules.(field) = learned_patterns.(field);
+    % Add historical patterns
+    if isfield(historical_patterns, 'llm_insights')
+        insights = historical_patterns.llm_insights;
+        field_names = fieldnames(insights);
+        for i = 1:length(field_names)
+            combined_rules.(['learned_' field_names{i}]) = insights.(field_names{i});
         end
     end
 end 
