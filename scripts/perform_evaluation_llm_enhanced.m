@@ -1,32 +1,54 @@
 function [confidence, fscore] = perform_evaluation_llm_enhanced(dataset_name, num_discrete, diff_threshold, abnormal_multiplier)
     % Load dataset
     data = load(['datasets/' dataset_name]);
+    model_directory = [pwd '/causal_models'];
+    mkdir(model_directory);
+    
+    % Set default parameters if not provided
+    if nargin < 2 || isempty(num_discrete)
+        num_discrete = 500;
+    end
+    if nargin < 3 || isempty(diff_threshold)
+        diff_threshold = 0.2;
+    end
+    if nargin < 4 || isempty(abnormal_multiplier)
+        abnormal_multiplier = 10;
+    end
     
     % Initialize parameters
-    llm_param = LLMExperimentParameter();
-    llm_param.use_llm_rules = true;
-    llm_param.create_model = true;
+    num_case = size(data.test_datasets, 1);
+    confidence = zeros(num_case, 1);
+    fscore = zeros(num_case, 1);
     
-    % Learn patterns from historical data
-    historical_patterns = llm_pattern_learner(data.test_datasets, data.causes);
+    % Setup experiment parameters
+    exp_param = ExperimentParameter();
+    exp_param.num_discrete = num_discrete;
+    exp_param.diff_threshold = diff_threshold;
+    exp_param.abnormal_multiplier = abnormal_multiplier;
+    exp_param.create_model = true;
+    exp_param.use_llm_rules = true;  % Enable LLM-based rule generation
     
-    % Enhance existing rules with learned patterns
-    enhanced_rules = combine_rules(load_template_rules(), historical_patterns);
-    
-    % Run evaluation with enhanced rules
-    [confidence, fscore] = evaluate_with_enhanced_rules(data, enhanced_rules, llm_param);
-end
-
-function enhanced_rules = combine_rules(template_rules, learned_patterns)
-    enhanced_rules = struct();
-    fields = fieldnames(template_rules);
-    
-    for i = 1:length(fields)
-        field = fields{i};
-        enhanced_rules.(field) = struct(...
-            'base_rule', template_rules.(field),...
-            'learned_patterns', learned_patterns.(field),...
-            'combined_pattern', combine_patterns(template_rules.(field), learned_patterns.(field))...
-        );
+    % Process each test case
+    for i = 1:num_case
+        % Get current test dataset and regions
+        test_data = data.test_datasets{i};
+        abnormal_regions = data.abnormal_regions{i};
+        normal_regions = data.normal_regions{i};
+        
+        % Set cause string for model naming
+        exp_param.cause_string = data.causes{i};
+        exp_param.model_name = ['cause' num2str(i)];
+        
+        % Run DBSherlock with LLM enhancement
+        explanation = run_dbsherlock(test_data, abnormal_regions, normal_regions, [], exp_param);
+        
+        % Extract metrics from explanation
+        if ~isempty(explanation)
+            confidence(i) = explanation{1, 2};  % confidence score
+            fscore(i) = explanation{1, 4};      % f1-measure
+        end
     end
+    
+    % Clean up temporary models
+    clearCausalModels(model_directory);
 end 
