@@ -2,12 +2,16 @@ classdef LLMExperimentParameter < ExperimentParameter
     properties
         use_llm_rules = true;
         llm_config
+        correct_filter_list = {};
     end
     
     methods
         function obj = LLMExperimentParameter()
             obj@ExperimentParameter();
             obj.create_model = true;
+            
+            % Initialize domain_knowledge as empty numeric array
+            obj.domain_knowledge = [];
             
             api_key = getenv('OPENAI_API_KEY');
             if isempty(api_key)
@@ -19,10 +23,9 @@ classdef LLMExperimentParameter < ExperimentParameter
                 obj.llm_config = struct();
             else
                 obj.llm_config = struct(...
-                    'api_key', api_key,...
-                    'model', 'gpt-4-turbo-preview',...
-                    'temperature', 0.7...
-                );
+                    'api_key', api_key, ...
+                    'model', 'gpt-4-turbo-preview', ...
+                    'temperature', 0.7);
             end
         end
     end
