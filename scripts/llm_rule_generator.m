@@ -58,4 +58,4 @@ function response = call_openai(prompt)
             'Authorization', ['Bearer ' getenv('OPENAI_API_KEY')],...
             'Content-Type', 'application/json'}));
     response = response.choices(1).message.content;
-end 
+end
