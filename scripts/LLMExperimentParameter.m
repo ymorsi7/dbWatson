@@ -1,16 +1,18 @@
-classdef LLMExperimentParameter
+classdef LLMExperimentParameter < ExperimentParameter
     properties
-        use_llm_rules = false;
-        create_model = false;
-        model_name = '';
-        num_discrete = 5;
-        diff_threshold = 0.1;
-        abnormal_multiplier = 1.5;
+        use_llm_rules = true;
+        model_name = 'gpt-4-turbo-preview';
+        temperature = 0.7;
+        max_tokens = 2048;
     end
     
     methods
         function obj = LLMExperimentParameter()
-            % Constructor with default values
+            obj = obj@ExperimentParameter();
+            obj.num_discrete = 5;
+            obj.diff_threshold = 0.1;
+            obj.abnormal_multiplier = 1.5;
+            obj.create_model = true;
         end
     end
 end 
