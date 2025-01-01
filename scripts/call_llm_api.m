@@ -1,20 +1,30 @@
 function response = call_llm_api(prompt, config)
     try
+        % Prepare the API request
         url = 'https://api.openai.com/v1/chat/completions';
-        headers = {'Content-Type', 'application/json',...
-                  'Authorization', ['Bearer ' config.api_key]};
+        headers = [
+            matlab.net.http.HeaderField('Content-Type', 'application/json')
+            matlab.net.http.HeaderField('Authorization', ['Bearer ' config.api_key])
+        ];
         
-        data = struct(...
+        body = struct(...
             'model', config.model,...
-            'messages', {{struct('role', 'system', 'content', 'You are a database performance expert.'),...
-                         struct('role', 'user', 'content', prompt)}},...
+            'messages', {{struct('role', 'user', 'content', prompt)}},...
             'temperature', config.temperature...
         );
         
-        options = weboptions('HeaderFields', headers, 'RequestMethod', 'post');
-        response_raw = webwrite(url, jsonencode(data), options);
-        response = jsondecode(response_raw).choices(1).message.content;
+        request = matlab.net.http.RequestMessage('post', headers, body);
+        response = send(request, url);
+        
+        if response.StatusCode == 200
+            content = response.Body.Data.choices(1).message.content;
+        else
+            error('API call failed with status code: %d', response.StatusCode);
+        end
     catch e
-        error('LLM API call failed: %s', e.message);
+        warning('API call failed: %s', e.message);
+        content = '{"rules": {}, "predicates": {}}';
     end
+    
+    response = content;
 end 

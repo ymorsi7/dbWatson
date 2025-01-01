@@ -1,20 +1,51 @@
 function [rules, predicates] = parse_llm_rules(llm_response, field_names)
-    rules = struct();
-    predicates = {};
-    
     try
+        % Parse JSON response
         parsed = jsondecode(llm_response);
-        for i = 1:length(parsed.rules)
-            rule = parsed.rules(i);
-            rules(i).name = rule.name;
-            rules(i).condition = rule.condition;
-            rules(i).confidence = rule.confidence;
-            
-            predicates{end+1} = convert_rule_to_predicate(rule, field_names);
+        
+        % Extract rules
+        if isfield(parsed, 'rules')
+            rules = parsed.rules;
+        else
+            rules = struct();
         end
-    catch
-        warning('Failed to parse LLM response, using fallback rules');
-        rules = generate_fallback_rules(field_names);
-        predicates = convert_rules_to_predicates(rules, field_names);
+        
+        % Extract predicates
+        if isfield(parsed, 'predicates')
+            predicates = parsed.predicates;
+        else
+            predicates = struct();
+        end
+        
+        % Validate rules against field names
+        rules = validate_rules(rules, field_names);
+        predicates = validate_predicates(predicates, field_names);
+        
+    catch e
+        warning('Failed to parse LLM rules: %s', e.message);
+        rules = struct();
+        predicates = struct();
+    end
+end
+
+function rules = validate_rules(rules, field_names)
+    fields = fieldnames(rules);
+    for i = 1:length(fields)
+        if ~ismember(fields{i}, field_names)
+            rules = rmfield(rules, fields{i});
+        end
+    end
+end
+
+function predicates = validate_predicates(predicates, field_names)
+    if ~isstruct(predicates)
+        predicates = struct();
+    end
+    
+    fields = fieldnames(predicates);
+    for i = 1:length(fields)
+        if ~ismember(fields{i}, field_names)
+            predicates = rmfield(predicates, fields{i});
+        end
     end
 end 
