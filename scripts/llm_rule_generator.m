@@ -72,7 +72,10 @@ function response = call_openai(prompt)
             'Content-Type', 'application/json'
         };
         
-        options = weboptions('HeaderFields', headers, 'MediaType', 'application/json');
+        % Set options with increased timeout
+        options = weboptions('HeaderFields', headers, ...
+            'MediaType', 'application/json', ...
+            'Timeout', 60);  % Increase timeout to 60 seconds
         
         % Format the request body according to OpenAI's API specification
         messages = {
@@ -99,7 +102,10 @@ function response = call_openai(prompt)
         if contains(e.message, 'SSL')
             % If SSL error, try with certificate verification disabled
             warning('SSL verification failed. Attempting with verification disabled...');
-            options = weboptions('HeaderFields', headers, 'CertificateFilename', '', 'MediaType', 'application/json');
+            options = weboptions('HeaderFields', headers, ...
+                'CertificateFilename', '', ...
+                'MediaType', 'application/json', ...
+                'Timeout', 60);
             
             response = webwrite('https://api.openai.com/v1/chat/completions', data, options);
             if isfield(response, 'choices') && ~isempty(response.choices) && isfield(response.choices(1), 'message')
@@ -116,7 +122,7 @@ end
 function [rules, predicates] = parse_llm_rules(response, field_names)
     % Initialize outputs
     rules = struct('rules', []);
-    predicates = cell(0, 8);
+    predicates = cell(0, 10);  % Changed from 8 to 10 columns
     
     try
         % Split response into lines
@@ -139,8 +145,9 @@ function [rules, predicates] = parse_llm_rules(response, field_names)
                     rules.rules(rule_count).operator = operator;
                     rules.rules(rule_count).value = value;
                     
-                    % Add to predicates cell array
-                    predicates(end+1,:) = {field, operator, value, '', '', '', '', ''};
+                    % Add to predicates cell array with 10 columns
+                    % Format: field, operator, value, start_time, end_time, confidence, support, lift, conviction, correlation
+                    predicates(end+1,:) = {field, operator, value, '', '', '', '', '', '', ''};
                 end
             catch
                 warning('Failed to parse rule: %s', line);
