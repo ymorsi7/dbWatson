@@ -1,4 +1,8 @@
 function reproduce_cui()
+    % Add scripts directory to path
+    current_dir = pwd;
+    addpath(fullfile(current_dir, 'scripts'));
+    
     while true
         fprintf('\n                << DBSherlock Experiments >>\n');
         fprintf('                1. Accuracy of Single Causal Models (Section 8.3)\n');

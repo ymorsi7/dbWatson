@@ -20,13 +20,11 @@ function [confidence, fscore] = perform_evaluation_llm_enhanced(dataset_name, nu
     confidence = zeros(num_case, 1);
     fscore = zeros(num_case, 1);
     
-    % Setup experiment parameters
-    exp_param = ExperimentParameter();
+    % Setup experiment parameters with LLM configuration
+    exp_param = LLMExperimentParameter();
     exp_param.num_discrete = num_discrete;
     exp_param.diff_threshold = diff_threshold;
     exp_param.abnormal_multiplier = abnormal_multiplier;
-    exp_param.create_model = true;
-    exp_param.use_llm_rules = true;  % Enable LLM-based rule generation
     
     % Process each test case
     for i = 1:num_case

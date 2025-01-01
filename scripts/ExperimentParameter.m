@@ -1,19 +1,23 @@
-classdef ExperimentParameter < handle
+classdef ExperimentParameter
 	properties
-		delay = 0;
 		num_discrete = 500;
 		diff_threshold = 0.2;
 		abnormal_multiplier = 10;
 		create_model = false;
-		cause_string = 'Cause';
+		cause_string = '';
 		model_name = '';
-		find_lag = false;
+		expand_normal_region = false;
+		expand_normal_size = 0;
 		introduce_lag = false;
+		find_lag = false;
 		lag_min = 0;
 		lag_max = 0;
-		expand_normal_region = false;
-		expand_normal_size = 1000;
-		domain_knowledge = [];
-		correct_filter_list = [];
+		domain_knowledge = struct();
 	end
-end % end classdef
+	
+	methods
+		function obj = ExperimentParameter()
+			% Constructor
+		end
+	end
+end
