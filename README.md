@@ -42,7 +42,12 @@ Here's what the original could do (these graphs are from the UMich paper):
 
 ### Improvements
 After adding GPT-4 to the mix, we saw:
-- TBD 
+- Improved confidence scores and F-scores in anomaly detection
+- Enhanced pattern recognition capabilities
+- More accurate root cause analysis
+
+![LLM Performance Metrics](figureLLM.png)
+*Distribution of Confidence Scores and F-scores with LLM Enhancement*
 
 ## Setting Up
 
