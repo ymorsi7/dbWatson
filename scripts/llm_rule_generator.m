@@ -66,28 +66,51 @@ end
 
 function response = call_openai(prompt)
     try
-        options = weboptions('HeaderFields', {...
-            'Authorization', ['Bearer ' getenv('OPENAI_API_KEY')],...
-            'Content-Type', 'application/json'});
+        % Properly format headers as Mx2 cell array
+        headers = {
+            'Authorization', ['Bearer ' getenv('OPENAI_API_KEY')]
+            'Content-Type', 'application/json'
+        };
         
-        data = struct(...
-            'model', 'gpt-4-turbo-preview',...
-            'messages', {[struct('role', 'user', 'content', prompt)]},...
-            'temperature', 0.7);
+        options = weboptions('HeaderFields', headers, 'MediaType', 'application/json');
         
-        response = webwrite('https://api.openai.com/v1/chat/completions', data, options);
-        response = response.choices(1).message.content;
+        % Format the request body according to OpenAI's API specification
+        data = struct();
+        data.model = 'gpt-4-turbo-preview';
+        data.messages = [{...
+            'role', 'system', ...
+            'content', 'You are an AI assistant analyzing database metrics and patterns. Provide clear, concise rules that explain anomalies in the data.'
+        }; {
+            'role', 'user', ...
+            'content', prompt
+        }];
+        data.temperature = 0.7;
+        data.max_tokens = 1000;
+        
+        % Convert the data to JSON string manually to ensure proper formatting
+        json_str = jsonencode(data);
+        
+        % Make the API call
+        response = webwrite('https://api.openai.com/v1/chat/completions', json_str, options);
+        
+        % Extract the response content
+        if isfield(response, 'choices') && ~isempty(response.choices) && isfield(response.choices(1), 'message')
+            response = response.choices(1).message.content;
+        else
+            error('Unexpected API response format');
+        end
     catch e
         if contains(e.message, 'SSL')
             % If SSL error, try with certificate verification disabled
             warning('SSL verification failed. Attempting with verification disabled...');
-            options = weboptions('HeaderFields', {...
-                'Authorization', ['Bearer ' getenv('OPENAI_API_KEY')],...
-                'Content-Type', 'application/json'}, ...
-                'CertificateFilename', '');
+            options = weboptions('HeaderFields', headers, 'CertificateFilename', '', 'MediaType', 'application/json');
             
-            response = webwrite('https://api.openai.com/v1/chat/completions', data, options);
-            response = response.choices(1).message.content;
+            response = webwrite('https://api.openai.com/v1/chat/completions', json_str, options);
+            if isfield(response, 'choices') && ~isempty(response.choices) && isfield(response.choices(1), 'message')
+                response = response.choices(1).message.content;
+            else
+                error('Unexpected API response format');
+            end
         else
             rethrow(e);
         end
