@@ -1,0 +1,26 @@
+function patterns = analyze_anomaly_patterns(data, abnormalIdx, normalIdx)
+    patterns = struct();
+    
+    abnormal_data = data(abnormalIdx, :);
+    normal_data = data(normalIdx, :);
+    
+    patterns.abnormal_stats = analyze_region_stats(abnormal_data);
+    patterns.normal_stats = analyze_region_stats(normal_data);
+    patterns.correlations = calculate_correlations(abnormal_data, normal_data);
+end
+
+function stats = analyze_region_stats(data)
+    stats = struct(...
+        'mean', mean(data),...
+        'std', std(data),...
+        'percentiles', prctile(data, [25 50 75]),...
+        'skewness', skewness(data)...
+    );
+end
+
+function corr = calculate_correlations(abnormal, normal)
+    corr = struct(...
+        'abnormal_corr', corrcoef(abnormal),...
+        'normal_corr', corrcoef(normal)...
+    );
+end 
