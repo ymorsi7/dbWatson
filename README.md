@@ -1,4 +1,4 @@
-# db-watson
+# DBWatson
 
 A practical extension to DBSherlock that adds GPT-4 capabilities for better anomaly detection
 
