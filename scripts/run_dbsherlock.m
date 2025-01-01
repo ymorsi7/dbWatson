@@ -627,4 +627,10 @@ function [explanation causalModels predicates extra] = run_dbsherlock(dataset, a
 
   causeRank = sortrows(causeRank, -2);
   explanation = causeRank;
+
+  % Add LLM-based rule generation
+  if exp_param.use_llm_rules
+    [llm_rules, llm_predicates] = llm_rule_generator(dataset, abnormalIdx, normalIdx, field_names, exp_param.model_name);
+    predicates = merge_predicates(predicates, llm_predicates);
+  end
 end

@@ -1,0 +1,42 @@
+{
+  "lock_contention": {
+    "description": "High lock wait times and queue lengths",
+    "metrics": ["lock_wait_time", "lock_queue_length", "active_transactions"],
+    "pattern": "lock_wait_time > 2 * avg_normal AND lock_queue_length > 5"
+  },
+  "io_bottleneck": {
+    "description": "Disk I/O performance issues",
+    "metrics": ["io_wait_time", "disk_queue_length", "iops"],
+    "pattern": "io_wait_time > 3 * avg_normal OR disk_queue_length > 10"
+  },
+  "memory_pressure": {
+    "description": "Memory usage and paging issues",
+    "metrics": ["buffer_cache_hit_ratio", "page_faults", "memory_usage"],
+    "pattern": "buffer_cache_hit_ratio < 0.8 AND page_faults > 100/sec"
+  },
+  "cpu_bottleneck": {
+    "description": "CPU utilization issues",
+    "metrics": ["cpu_usage", "run_queue_length", "context_switches"],
+    "pattern": "cpu_usage > 85 AND run_queue_length > cpu_cores * 2"
+  },
+  "connection_pool_exhaustion": {
+    "description": "Database connection issues",
+    "metrics": ["active_connections", "connection_wait_time", "connection_timeouts"],
+    "pattern": "active_connections > max_connections * 0.9 OR connection_timeouts > 0"
+  },
+  "deadlock_situation": {
+    "description": "Database deadlock detection",
+    "metrics": ["deadlocks_per_sec", "lock_timeouts", "rollbacks"],
+    "pattern": "deadlocks_per_sec > 0 AND lock_timeouts > prev_5min_avg * 2"
+  },
+  "query_plan_regression": {
+    "description": "Query performance degradation",
+    "metrics": ["query_cpu_time", "table_scans", "buffer_hit_ratio"],
+    "pattern": "table_scans > normal_avg * 3 AND buffer_hit_ratio < 0.7"
+  },
+  "replication_lag": {
+    "description": "Database replication issues",
+    "metrics": ["replication_delay", "write_throughput", "network_traffic"],
+    "pattern": "replication_delay > 300 OR write_throughput < normal_avg * 0.5"
+  }
+} 
