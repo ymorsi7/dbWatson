@@ -68,17 +68,17 @@ After integrating GPT-4 into DBSherlock's analysis pipeline, we observed signifi
 ![LLM Performance Metrics](figureLLM.png)
 *Comprehensive analysis of LLM-enhanced detection showing performance by case type, correlation metrics, and score distributions*
 
-These results demonstrate that LLM integration significantly improves DBSherlock's ability to identify and explain database performance anomalies, particularly in complex scenarios involving physical design and resource utilization issues.
+These results shoow that LLM integration significantly improves DBSherlock's ability to identify and explain database performance anomalies, especially in complex scenarios involving physical design and resource utilization issues.
 
 ## Setting Up
 
 ### Software:
-- MATLAB R2015b or newer (yeah, we know, but it's what DBSherlock uses)
+- MATLAB R2015b or newer 
 - OpenAI API key
 
 ### Setup
 
-1. Grab the code:
+1. Get the code:
 ```bash
 git clone https://github.com/ymorsi7/db-watson.git
 cd db-watson
