@@ -1,4 +1,4 @@
-function [prec_dbseer recl_dbseer f_dbseer prec_perfxplain recl_perfxplain f_perfxplain] = perform_evaluation_perfxplain(dataset_name, num_discrete, diff_threshold, abnormal_multiplier)
+function [prec_dbseer, recl_dbseer, f_dbseer, prec_perfxplain, recl_perfxplain, f_perfxplain, prec_llm, recl_llm, f_llm] = perform_evaluation_perfxplain(dataset_name, num_discrete, diff_threshold, abnormal_multiplier)
 
   data = load(['datasets/' dataset_name]);
   model_directory = [pwd '/causal_models'];
@@ -45,6 +45,9 @@ function [prec_dbseer recl_dbseer f_dbseer prec_perfxplain recl_perfxplain f_per
   prec_perfxplain = {};
   recl_perfxplain = {};
   f_perfxplain = {};
+  prec_llm = {};
+  recl_llm = {};
+  f_llm = {};
 
   for i=1:num_case
     prec_perfxplain{i} = [];
@@ -53,7 +56,13 @@ function [prec_dbseer recl_dbseer f_dbseer prec_perfxplain recl_perfxplain f_per
     prec_dbseer{i} = [];
     recl_dbseer{i} = [];
     f_dbseer{i} = [];
+    prec_llm{i} = [];
+    recl_llm{i} = [];
+    f_llm{i} = [];
   end
+
+  % Get LLM results once for comparison
+  [llm_conf, llm_fscore] = get_llm_results(dataset_name);
 
   for batch=1:num_samples
 
@@ -92,4 +101,26 @@ function [prec_dbseer recl_dbseer f_dbseer prec_perfxplain recl_perfxplain f_per
       end
     end
   end
+
+  % Plot results including LLM comparison
+  figure('Name', 'Performance Comparison', 'Position', [100, 100, 800, 600]);
+  
+  % Calculate means for plotting
+  mean_f_dbseer = cellfun(@mean, f_dbseer);
+  mean_f_perfxplain = cellfun(@mean, f_perfxplain);
+  
+  % Create grouped bar plot
+  bar_data = [mean_f_dbseer', mean_f_perfxplain', llm_fscore];
+  b = bar(bar_data, 'grouped');
+  
+  % Customize appearance
+  title('Performance Comparison', 'FontSize', 12, 'FontWeight', 'bold');
+  xlabel('Case Number', 'FontWeight', 'bold');
+  ylabel('F-score (%)', 'FontWeight', 'bold');
+  legend('DBSherlock', 'PerfXplain', 'DBWatson (LLM)', 'Location', 'southoutside', 'Orientation', 'horizontal');
+  grid on;
+  ylim([0 100]);
+  
+  % Save plot
+  saveas(gcf, 'perfxplain_comparison.png');
 end
