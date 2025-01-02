@@ -18,25 +18,32 @@ We added three main things:
 ### Original DBSherlock
 Here's what the original could do (these graphs are from the UMich paper):
 
-![Original Analysis](figure1.png)
+<img src="figure1.png" alt="Original Analysis" width="400"/>
+
 *Accuracy of Single Causal Models*
 
-![Original Analysis](figure2.jpg)
+<img src="figure2.jpg" alt="Original Analysis" width="400"/>
+
 *DBSherlock Predicates vs PerfXplain*
 
-![Original Analysis](figure3.jpg)
+<img src="figure3.jpg" alt="Original Analysis" width="400"/>
+
 *Merged Causal Models Effectiveness*
 
-![Original Analysis](figure4.jpg)
+<img src="figure4.jpg" alt="Original Analysis" width="400"/>
+
 *Merged Causal Models Effectiveness*
 
-![Original Analysis](figure5.jpg)
+<img src="figure5.jpg" alt="Original Analysis" width="400"/>
+
 *Merged Causal Models Effectiveness*
 
-![Original Analysis](figure6.jpg)
+<img src="figure6.jpg" alt="Original Analysis" width="400"/>
+
 *Explaining Compound Situations*
 
-![Original Analysis](figure7.jpg)
+<img src="figure7.jpg" alt="Original Analysis" width="400"/>
+
 *Effect of Incorporating Domain Knowledge*
 
 ### Improvements
