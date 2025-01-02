@@ -1,26 +1,40 @@
 function plot_combined_results(conf_llm, fscore_llm)
-    figure('Name', 'Combined Analysis Results');
+    figure('Position', [100, 100, 1200, 800]);
     
-    % Create subplot for confidence scores
+    % 1. Time Series View
     subplot(2,2,1);
-    histogram(conf_llm, 'Normalization', 'probability');
-    title('LLM-Enhanced Confidence Scores');
-    xlabel('Confidence Score (%)');
-    ylabel('Frequency');
-    
-    % Create subplot for F-scores
-    subplot(2,2,2);
-    histogram(fscore_llm, 'Normalization', 'probability');
-    title('LLM-Enhanced F-scores');
-    xlabel('F-score');
-    ylabel('Frequency');
-    
-    % Add comparison with baseline
-    subplot(2,2,[3,4]);
-    boxplot([conf_llm, fscore_llm], 'Labels', {'Confidence', 'F-score'});
-    title('Performance Metrics Distribution');
+    plot(1:length(conf_llm), conf_llm, '-o', 1:length(fscore_llm), fscore_llm, '-s');
+    title('Performance Trends');
+    xlabel('Case Number');
     ylabel('Score (%)');
+    legend('Confidence', 'F-score', 'Location', 'best');
+    grid on;
     
-    % Adjust layout
-    sgtitle('DBSherlock Combined Analysis Results');
+    % 2. Correlation Analysis
+    subplot(2,2,2);
+    scatter(conf_llm, fscore_llm, 50, 1:length(conf_llm), 'filled');
+    colorbar('Ticks', 1:length(conf_llm), 'TickLabels', cellstr(num2str((1:length(conf_llm))')));
+    title('Metric Correlation by Case');
+    xlabel('Confidence (%)');
+    ylabel('F-score (%)');
+    grid on;
+    
+    % 3. Performance Distribution
+    subplot(2,2,[3,4]);
+    data = [conf_llm(:), fscore_llm(:)];
+    violinplot(data, {'Confidence', 'F-score'});
+    hold on;
+    plot(xlim, [mean(conf_llm) mean(conf_llm)], '--r');
+    plot(xlim, [mean(fscore_llm) mean(fscore_llm)], '--b');
+    title('Score Distributions with Means');
+    ylabel('Score (%)');
+    grid on;
+    
+    % Add summary title
+    sgtitle(sprintf('DBSherlock Performance Analysis\nMean Confidence: %.1f%%, Mean F-score: %.1f%%', ...
+        mean(conf_llm), mean(fscore_llm)));
+    
+    % Save plot
+    saveas(gcf, 'combined_analysis_results.png');
+    fprintf('\nPlot saved as combined_analysis_results.png\n');
 end 

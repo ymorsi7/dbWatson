@@ -7,6 +7,11 @@ function [explanation causalModels predicates extra] = run_dbsherlock(dataset, a
   end
   extra = struct;
 
+  % Initialize default values for filtering
+  domain_knowledge = struct('rules', {}, 'fields', {});
+  correct_filter_list = {};
+  use_llm_rules = true;
+
   model_directory = [pwd '/causal_models'];
 
   % some constants
@@ -451,13 +456,17 @@ function [explanation causalModels predicates extra] = run_dbsherlock(dataset, a
     effectCount = 1;
     extra.predicates_before = predicates;
     if ~isempty(exp_param.domain_knowledge)
-      [predicates c incorrect r should_not_be_filtered before_stat] = filter_with_domain_knowledge(data, predicates, exp_param.domain_knowledge, exp_param.correct_filter_list);
-      extra.num_filtered_correct = extra.num_filtered_correct + c;
-      extra.num_should_be_filtered = extra.num_should_be_filtered + r;
-      extra.num_filtered_incorrect = extra.num_filtered_incorrect + incorrect;
-      extra.num_should_not_be_filtered = extra.num_should_not_be_filtered + should_not_be_filtered;
-      extra.before_false_positive = extra.before_false_positive + before_stat.false_positive;
-      extra.before_false_negative = extra.before_false_negative + before_stat.false_negative;
+      try
+        [predicates, c, incorrect, r, should_not_be_filtered, before_stat] = filter_with_domain_knowledge(data, predicates, exp_param.domain_knowledge, correct_filter_list);
+        extra.num_filtered_correct = extra.num_filtered_correct + c;
+        extra.num_should_be_filtered = extra.num_should_be_filtered + r;
+        extra.num_filtered_incorrect = extra.num_filtered_incorrect + incorrect;
+        extra.num_should_not_be_filtered = extra.num_should_not_be_filtered + should_not_be_filtered;
+        extra.before_false_positive = extra.before_false_positive + before_stat.false_positive;
+        extra.before_false_negative = extra.before_false_negative + before_stat.false_negative;
+      catch e
+        warning('Error applying domain knowledge: %s', e.message);
+      end
     end
     sorted_predicates = {};
     if size(predicates, 1) > 0
@@ -629,8 +638,75 @@ function [explanation causalModels predicates extra] = run_dbsherlock(dataset, a
   explanation = causeRank;
 
   % Add LLM-based rule generation
-  if exp_param.use_llm_rules
-    [llm_rules, llm_predicates] = llm_rule_generator(dataset, abnormalIdx, normalIdx, field_names, exp_param.model_name);
-    predicates = merge_predicates(predicates, llm_predicates);
+  if use_llm_rules
+    try
+        [llm_rules, llm_predicates] = llm_rule_generator(dataset, abnormalIdx, normalIdx, field_names, exp_param.model_name);
+        predicates = merge_predicates(predicates, llm_predicates);
+    catch e
+        warning('LLM rule generation failed: %s', e.message);
+    end
   end
+end
+
+function plot_llm_results(confidence, fscore)
+    if isempty(confidence) || isempty(fscore)
+        error('No data available to plot. Check if evaluation generated results.');
+    end
+    
+    % Create figure with multiple subplots
+    figure('Position', [100, 100, 1200, 800]);
+    
+    % 1. Performance by Case
+    subplot(2,2,1);
+    cases = 1:length(confidence);
+    bar([confidence, fscore]);
+    title('Performance Metrics by Case');
+    xlabel('Case Number');
+    ylabel('Score (%)');
+    legend('Confidence', 'F-score');
+    grid on;
+    
+    % 2. Correlation Plot
+    subplot(2,2,2);
+    scatter(confidence, fscore, 50, 'filled');
+    hold on;
+    fit = polyfit(confidence, fscore, 1);
+    plot(confidence, polyval(fit, confidence), 'r--');
+    title('Correlation: Confidence vs F-score');
+    xlabel('Confidence Score (%)');
+    ylabel('F-score (%)');
+    grid on;
+    
+    % 3. Distribution Analysis
+    subplot(2,2,3);
+    violinplot([confidence, fscore], {'Confidence', 'F-score'});
+    title('Score Distributions');
+    ylabel('Score (%)');
+    grid on;
+    
+    % 4. Performance Ranking
+    subplot(2,2,4);
+    [sorted_scores, idx] = sort(fscore, 'descend');
+    barh(sorted_scores);
+    title('Cases Ranked by F-score');
+    xlabel('F-score (%)');
+    ylabel('Case Rank');
+    grid on;
+    
+    % Add overall title with summary statistics
+    sgtitle(sprintf('DBSherlock Analysis Results\nMean Confidence: %.1f%%, Mean F-score: %.1f%%', ...
+        mean(confidence), mean(fscore)));
+    
+    % Print detailed statistics
+    fprintf('\nPerformance Summary:\n');
+    fprintf('Confidence Scores:\n');
+    fprintf('  Mean: %.2f%%\n  Median: %.2f%%\n  Std: %.2f%%\n  Range: [%.2f%%, %.2f%%]\n', ...
+        mean(confidence), median(confidence), std(confidence), min(confidence), max(confidence));
+    fprintf('\nF-scores:\n');
+    fprintf('  Mean: %.2f%%\n  Median: %.2f%%\n  Std: %.2f%%\n  Range: [%.2f%%, %.2f%%]\n', ...
+        mean(fscore), median(fscore), std(fscore), min(fscore), max(fscore));
+    
+    % Save plot
+    saveas(gcf, 'llm_analysis_results.png');
+    fprintf('\nPlot saved as llm_analysis_results.png\n');
 end

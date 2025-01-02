@@ -32,6 +32,10 @@ function reproduce_cui()
             case 7
                 fprintf('\nRunning LLM-Enhanced Analysis...\n');
                 [conf_llm, fscore_llm] = perform_evaluation_llm_enhanced('dbsherlock_dataset_tpcc_16w.mat');
+                fprintf('Confidence scores: min=%.2f, max=%.2f, mean=%.2f\n', ...
+                    min(conf_llm), max(conf_llm), mean(conf_llm));
+                fprintf('F-scores: min=%.2f, max=%.2f, mean=%.2f\n', ...
+                    min(fscore_llm), max(fscore_llm), mean(fscore_llm));
                 plot_llm_results(conf_llm, fscore_llm);
             case 8
                 fprintf('\nRunning all experiments including LLM analysis...\n');
