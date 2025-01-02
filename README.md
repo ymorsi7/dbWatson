@@ -18,31 +18,31 @@ We added three main things:
 ### Original DBSherlock
 Here's what the original could do (these graphs are from the UMich paper):
 
-<img src="figure1.png" alt="Original Analysis" width="400"/>
+<img src="figures/figure1.png" alt="Original Analysis" width="400"/>
 
 *Accuracy of Single Causal Models*
 
-<img src="figure2.jpg" alt="Original Analysis" width="400"/>
+<img src="figures/figure2.jpg" alt="Original Analysis" width="400"/>
 
 *DBSherlock Predicates vs PerfXplain*
 
-<img src="figure3.jpg" alt="Original Analysis" width="400"/>
+<img src="figures/figure3.jpg" alt="Original Analysis" width="400"/>
 
 *Merged Causal Models Effectiveness*
 
-<img src="figure4.jpg" alt="Original Analysis" width="400"/>
+<img src="figures/figure4.jpg" alt="Original Analysis" width="400"/>
 
 *Merged Causal Models Effectiveness*
 
-<img src="figure5.jpg" alt="Original Analysis" width="400"/>
+<img src="figures/figure5.jpg" alt="Original Analysis" width="400"/>
 
 *Merged Causal Models Effectiveness*
 
-<img src="figure6.jpg" alt="Original Analysis" width="400"/>
+<img src="figures/figure6.jpg" alt="Original Analysis" width="400"/>
 
 *Explaining Compound Situations*
 
-<img src="figure7.jpg" alt="Original Analysis" width="400"/>
+<img src="figures/figure7.jpg" alt="Original Analysis" width="400"/>
 
 *Effect of Incorporating Domain Knowledge*
 
@@ -65,7 +65,7 @@ After integrating GPT-4 into DBSherlock's analysis pipeline, we observed signifi
   - Narrow confidence intervals in detection accuracy
   - Balanced precision-recall trade-off in anomaly classification
 
-![LLM Performance Metrics](figureLLM.png)
+![LLM Performance Metrics](figures/LLM.png)
 *Comprehensive analysis of LLM-enhanced detection showing performance by case type, correlation metrics, and score distributions*
 
 These results shoow that LLM integration significantly improves DBSherlock's ability to identify and explain database performance anomalies, especially in complex scenarios involving physical design and resource utilization issues.
