@@ -2,47 +2,58 @@ function plot_llm_results(confidence, fscore)
     % Create a new figure with multiple subplots
     figure('Name', 'LLM-Enhanced Analysis Results', 'Position', [100, 100, 1200, 800]);
     
-    % Plot 1: Confidence Score Distribution
-    subplot(2,3,1);
-    histogram(confidence, 'Normalization', 'probability');
-    title('Distribution of Confidence Scores');
-    xlabel('Confidence Score (%)');
-    ylabel('Frequency');
-    
-    % Plot 2: F-score Distribution
-    subplot(2,3,2);
-    histogram(fscore, 'Normalization', 'probability');
-    title('Distribution of F-scores');
-    xlabel('F-score');
-    ylabel('Frequency');
-    
-    % Plot 3: Scatter plot of Confidence vs F-score
-    subplot(2,3,3);
-    scatter(confidence, fscore, 'filled');
-    title('Confidence vs F-score');
-    xlabel('Confidence Score (%)');
-    ylabel('F-score');
-    
-    % Plot 4: Box plots
-    subplot(2,3,4);
-    boxplot([confidence, fscore], 'Labels', {'Confidence', 'F-score'});
-    title('Performance Metrics Distribution');
-    ylabel('Score (%)');
-    
-    % Plot 5: Time series-like plot
-    subplot(2,3,[5,6]);
+    % Plot 1: Bar chart comparing average metrics
+    subplot(2,2,1);
+    metrics = [mean(confidence) mean(fscore)];
+    std_metrics = [std(confidence) std(fscore)];
+    bar(metrics);
     hold on;
-    plot(confidence, 'b-', 'LineWidth', 2);
-    plot(fscore, 'r--', 'LineWidth', 2);
-    title('Performance Metrics Over Cases');
-    xlabel('Case Number');
+    errorbar(1:2, metrics, std_metrics, 'k.');
+    title('Average Performance Metrics');
+    set(gca, 'XTickLabel', {'Confidence', 'F-score'});
     ylabel('Score (%)');
-    legend('Confidence', 'F-score');
     grid on;
-    hold off;
     
-    % Adjust layout
-    sgtitle('DBSherlock LLM-Enhanced Analysis Results');
+    % Plot 2: Cause-wise comparison
+    subplot(2,2,2);
+    num_cases = length(confidence);
+    plot(1:num_cases, confidence, 'bo-', 'LineWidth', 2, 'MarkerSize', 8);
+    hold on;
+    plot(1:num_cases, fscore, 'rd--', 'LineWidth', 2, 'MarkerSize', 8);
+    title('Performance by Cause');
+    xlabel('Cause Number');
+    ylabel('Score (%)');
+    legend('Confidence', 'F-score', 'Location', 'best');
+    grid on;
+    
+    % Plot 3: Scatter plot with regression line
+    subplot(2,2,3);
+    scatter(confidence, fscore, 100, 'filled');
+    hold on;
+    p = polyfit(confidence, fscore, 1);
+    x_fit = linspace(min(confidence), max(confidence), 100);
+    y_fit = polyval(p, x_fit);
+    plot(x_fit, y_fit, 'r--', 'LineWidth', 2);
+    title('Confidence vs F-score Correlation');
+    xlabel('Confidence Score (%)');
+    ylabel('F-score (%)');
+    grid on;
+    
+    % Plot 4: Cumulative distribution
+    subplot(2,2,4);
+    sorted_conf = sort(confidence);
+    sorted_fscore = sort(fscore);
+    plot(sorted_conf, (1:length(confidence))/length(confidence), 'b-', 'LineWidth', 2);
+    hold on;
+    plot(sorted_fscore, (1:length(fscore))/length(fscore), 'r--', 'LineWidth', 2);
+    title('Cumulative Distribution');
+    xlabel('Score (%)');
+    ylabel('Cumulative Probability');
+    legend('Confidence', 'F-score', 'Location', 'best');
+    grid on;
+    
+    % Adjust layout and add overall title
+    sgtitle('DBSherlock LLM-Enhanced Analysis Results', 'FontSize', 14);
 end 
 
 function plot_combined_results(conf_llm, fscore_llm)
