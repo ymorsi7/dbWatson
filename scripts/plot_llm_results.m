@@ -3,62 +3,60 @@ function plot_llm_results(confidence, fscore)
         error('No data available to plot. Check if evaluation generated results.');
     end
     
-    if all(confidence == 0) || all(fscore == 0)
-        error('All values are zero. Check if metrics are being calculated correctly.');
-    end
+    % Create figure with multiple subplots
+    figure('Position', [100, 100, 1200, 800]);
     
-    figure('Name', 'LLM-Enhanced Analysis Results');
+    % 1. Performance by Case
+    subplot(2,2,1);
+    cases = 1:length(confidence);
+    bar([confidence, fscore]);
+    title('Performance Metrics by Case');
+    xlabel('Case Number');
+    ylabel('Score (%)');
+    legend('Confidence', 'F-score');
+    grid on;
     
-    % Create subplot for confidence scores
-    subplot(2,1,1);
-    histogram(confidence, 'BinMethod', 'scott', 'Normalization', 'count');
-    title(sprintf('Distribution of Confidence Scores (n=%d)', length(confidence)));
+    % 2. Correlation Plot
+    subplot(2,2,2);
+    scatter(confidence, fscore, 50, 'filled');
+    hold on;
+    fit = polyfit(confidence, fscore, 1);
+    plot(confidence, polyval(fit, confidence), 'r--');
+    title('Correlation: Confidence vs F-score');
     xlabel('Confidence Score (%)');
-    ylabel('Count');
+    ylabel('F-score (%)');
     grid on;
-    ylim([0 max(histcounts(confidence)) + 1]);
     
-    % Create subplot for F-scores
-    subplot(2,1,2);
-    histogram(fscore, 'BinMethod', 'scott', 'Normalization', 'count');
-    title(sprintf('Distribution of F-scores (n=%d)', length(fscore)));
+    % 3. Distribution Analysis
+    subplot(2,2,3);
+    violinplot([confidence, fscore], {'Confidence', 'F-score'});
+    title('Score Distributions');
+    ylabel('Score (%)');
+    grid on;
+    
+    % 4. Performance Ranking
+    subplot(2,2,4);
+    [sorted_scores, idx] = sort(fscore, 'descend');
+    barh(sorted_scores);
+    title('Cases Ranked by F-score');
     xlabel('F-score (%)');
-    ylabel('Count');
+    ylabel('Case Rank');
     grid on;
-    ylim([0 max(histcounts(fscore)) + 1]);
     
-    sgtitle('DBSherlock LLM-Enhanced Performance Metrics');
+    % Add overall title with summary statistics
+    sgtitle(sprintf('DBSherlock Analysis Results\nMean Confidence: %.1f%%, Mean F-score: %.1f%%', ...
+        mean(confidence), mean(fscore)));
     
-    % Print summary statistics
-    fprintf('\nSummary Statistics:\n');
-    fprintf('Confidence: mean=%.2f, std=%.2f, median=%.2f, range=[%.2f, %.2f]\n', ...
-        mean(confidence), std(confidence), median(confidence), min(confidence), max(confidence));
-    fprintf('F-score: mean=%.2f, std=%.2f, median=%.2f, range=[%.2f, %.2f]\n', ...
-        mean(fscore), std(fscore), median(fscore), min(fscore), max(fscore));
-end 
-
-function plot_combined_results(conf_llm, fscore_llm)
-    figure('Name', 'Combined Analysis Results');
+    % Print detailed statistics
+    fprintf('\nPerformance Summary:\n');
+    fprintf('Confidence Scores:\n');
+    fprintf('  Mean: %.2f%%\n  Median: %.2f%%\n  Std: %.2f%%\n  Range: [%.2f%%, %.2f%%]\n', ...
+        mean(confidence), median(confidence), std(confidence), min(confidence), max(confidence));
+    fprintf('\nF-scores:\n');
+    fprintf('  Mean: %.2f%%\n  Median: %.2f%%\n  Std: %.2f%%\n  Range: [%.2f%%, %.2f%%]\n', ...
+        mean(fscore), median(fscore), std(fscore), min(fscore), max(fscore));
     
-    % Plot confidence comparison
-    subplot(2,1,1);
-    hold on;
-    bar([conf_llm mean(conf_llm)]);
-    title('Confidence Scores (Original vs LLM-Enhanced)');
-    legend('LLM-Enhanced', 'Mean');
-    ylabel('Confidence (%)');
-    xlabel('Case Number');
-    ylim([0 100]);
-    hold off;
-    
-    % Plot F1-score comparison
-    subplot(2,1,2);
-    hold on;
-    bar([fscore_llm mean(fscore_llm)]);
-    title('F1-Scores (Original vs LLM-Enhanced)');
-    legend('LLM-Enhanced', 'Mean');
-    ylabel('F1-Score (%)');
-    xlabel('Case Number');
-    ylim([0 100]);
-    hold off;
+    % Save plot
+    saveas(gcf, 'llm_analysis_results.png');
+    fprintf('\nPlot saved as llm_analysis_results.png\n');
 end

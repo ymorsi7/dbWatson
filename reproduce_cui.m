@@ -40,7 +40,10 @@ function reproduce_cui()
                 fprintf('\nRunning all experiments including LLM analysis...\n');
                 run_all_original_experiments();
                 [conf_llm, fscore_llm] = perform_evaluation_llm_enhanced('dbsherlock_dataset_tpcc_16w.mat');
-                plot_combined_results(conf_llm, fscore_llm);
+                case_names = {'Poorly Written Query', 'Poor Physical Design', 'Workload Spike', ...
+                            'I/O Saturation', 'DB Backup', 'Table Restore', 'CPU Saturation', ...
+                            'Flush Log/Table', 'Network Congestion', 'Lock Contention'};
+                plot_comprehensive_analysis(conf_llm, fscore_llm, case_names);
             otherwise
                 fprintf('Exiting...\n');
                 return;
