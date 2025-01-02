@@ -65,7 +65,7 @@ After integrating GPT-4 into DBSherlock's analysis pipeline, we observed signifi
   - Narrow confidence intervals in detection accuracy
   - Balanced precision-recall trade-off in anomaly classification
 
-![LLM Performance Metrics](figures/LLM.png)
+![LLM Performance Metrics](figures/figureLLM.png)
 *Comprehensive analysis of LLM-enhanced detection showing performance by case type, correlation metrics, and score distributions*
 
 These results shoow that LLM integration significantly improves DBSherlock's ability to identify and explain database performance anomalies, especially in complex scenarios involving physical design and resource utilization issues.
