@@ -3,6 +3,11 @@ function reproduce_cui()
     current_dir = pwd;
     addpath(fullfile(current_dir, 'scripts'));
     
+    % Define case names once
+    case_names = {'Poorly Written Query', 'Poor Physical Design', 'Workload Spike', ...
+                 'I/O Saturation', 'DB Backup', 'Table Restore', 'CPU Saturation', ...
+                 'Flush Log/Table', 'Network Congestion', 'Lock Contention'};
+    
     while true
         fprintf('\n                << DBSherlock Experiments >>\n');
         fprintf('                1. Accuracy of Single Causal Models (Section 8.3)\n');
@@ -16,37 +21,33 @@ function reproduce_cui()
         
         choice = input('Select an experiment to reproduce (1-8 or other input to exit): ');
         
+        dataset_name = 'dbsherlock_dataset_tpcc_16w.mat';
+        
         switch choice
             case 1
-                perform_evaluation_single_causal_models();
+                perform_evaluation_single_causal_models(dataset_name);
             case 2
-                perform_evaluation_perfxplain();
+                perform_evaluation_perfxplain(dataset_name);
             case 3
-                perform_evaluation_merged_causal_models();
+                perform_evaluation_merged_causal_models(dataset_name);
             case 4
-                perform_evaluation_domain_knowledge();
+                perform_evaluation_domain_knowledge(dataset_name);
             case 5
-                perform_evaluation_compound_situations();
+                perform_evaluation_compound_situations(dataset_name);
             case 6
                 run_all_original_experiments();
             case 7
                 fprintf('\nRunning LLM-Enhanced Analysis...\n');
-                [conf_llm, fscore_llm] = perform_evaluation_llm_enhanced('dbsherlock_dataset_tpcc_16w.mat');
-                case_names = {'Poorly Written Query', 'Poor Physical Design', 'Workload Spike', ...
-                            'I/O Saturation', 'DB Backup', 'Table Restore', 'CPU Saturation', ...
-                            'Flush Log/Table', 'Network Congestion', 'Lock Contention'};
+                [conf_llm, fscore_llm] = perform_evaluation_llm_enhanced(dataset_name);
                 plot_comprehensive_analysis(conf_llm, fscore_llm, case_names);
             case 8
                 fprintf('\nRunning all experiments including LLM analysis...\n');
                 run_all_original_experiments();
-                [conf_llm, fscore_llm] = perform_evaluation_llm_enhanced('dbsherlock_dataset_tpcc_16w.mat');
-                case_names = {'Poorly Written Query', 'Poor Physical Design', 'Workload Spike', ...
-                            'I/O Saturation', 'DB Backup', 'Table Restore', 'CPU Saturation', ...
-                            'Flush Log/Table', 'Network Congestion', 'Lock Contention'};
+                [conf_llm, fscore_llm] = perform_evaluation_llm_enhanced(dataset_name);
                 plot_comprehensive_analysis(conf_llm, fscore_llm, case_names);
             otherwise
                 fprintf('Exiting...\n');
                 return;
         end
     end
-end
+end 
