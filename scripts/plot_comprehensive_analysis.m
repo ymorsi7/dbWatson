@@ -105,30 +105,44 @@ function plot_comprehensive_analysis(conf_llm, fscore_llm, case_names)
     scatter(2*ones(size(fscore_llm)) + (rand(size(fscore_llm))-0.5)*jitter, fscore_llm, 50, ...
            fscore_color, 'filled', 'MarkerFaceAlpha', 0.6);
     
-    % Define label positions for both confidence and f-score points
+    % Define label positions with more vertical spread
     label_positions_conf = [
-        0.3, 95;  % top left
-        0.3, 85;  % upper left
-        0.3, 75;  % middle left
-        0.3, 65;  % lower left
-        0.3, 55;  % bottom left
+        0.3, 95;   % top left
+        0.3, 85;   % upper left
+        0.3, 75;   % middle-upper left
+        0.3, 65;   % middle left
+        0.3, 55;   % middle-lower left
+        0.3, 45;   % lower left
+        0.3, 35;   % bottom left
+        0.3, 25;   % very bottom left
+        0.3, 15;   % lowest left
+        0.3, 5;    % absolute bottom left
     ];
     
     label_positions_fscore = [
-        2.7, 95;  % top right
-        2.7, 85;  % upper right
-        2.7, 75;  % middle right
-        2.7, 65;  % lower right
-        2.7, 55;  % bottom right
+        2.7, 90;   % top right (offset from left)
+        2.7, 80;   % upper right
+        2.7, 70;   % middle-upper right
+        2.7, 60;   % middle right
+        2.7, 50;   % middle-lower right
+        2.7, 40;   % lower right
+        2.7, 30;   % bottom right
+        2.7, 20;   % very bottom right
+        2.7, 10;   % lowest right
+        2.7, 0;    % absolute bottom right
     ];
+    
+    % Sort cases by value for better label placement
+    [~, conf_idx] = sort(conf_llm, 'descend');
+    [~, fscore_idx] = sort(fscore_llm, 'descend');
     
     % Add point labels with improved positioning
     for i = 1:length(case_names)
         % Label confidence points
         x_conf = 1 + (rand-0.5)*jitter;
         y_conf = conf_llm(i);
-        x_label = label_positions_conf(mod(i-1, size(label_positions_conf,1))+1, 1);
-        y_label = label_positions_conf(mod(i-1, size(label_positions_conf,1))+1, 2);
+        x_label = label_positions_conf(conf_idx(i), 1);
+        y_label = label_positions_conf(conf_idx(i), 2);
         
         % Draw connection line for confidence
         plot([x_conf x_label], [y_conf y_label], ':', 'Color', [0.7 0.7 0.7], 'LineWidth', 0.5);
@@ -142,8 +156,8 @@ function plot_comprehensive_analysis(conf_llm, fscore_llm, case_names)
         % Label F-score points
         x_fscore = 2 + (rand-0.5)*jitter;
         y_fscore = fscore_llm(i);
-        x_label = label_positions_fscore(mod(i-1, size(label_positions_fscore,1))+1, 1);
-        y_label = label_positions_fscore(mod(i-1, size(label_positions_fscore,1))+1, 2);
+        x_label = label_positions_fscore(fscore_idx(i), 1);
+        y_label = label_positions_fscore(fscore_idx(i), 2);
         
         % Draw connection line for f-score
         plot([x_fscore x_label], [y_fscore y_label], ':', 'Color', [0.7 0.7 0.7], 'LineWidth', 0.5);
