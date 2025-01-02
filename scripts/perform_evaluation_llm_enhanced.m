@@ -26,6 +26,7 @@ function [confidence, fscore] = perform_evaluation_llm_enhanced(dataset_name, nu
     exp_param.diff_threshold = diff_threshold;
     exp_param.abnormal_multiplier = abnormal_multiplier;
     exp_param.create_model = true;
+    exp_param.use_llm_rules = true;
     
     fprintf('Starting evaluation with %d cases...\n', num_case);
     

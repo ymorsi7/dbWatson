@@ -4,6 +4,7 @@ classdef ExperimentParameter
 		diff_threshold = 0.2;
 		abnormal_multiplier = 10;
 		create_model = false;
+		use_llm_rules = false;
 		cause_string = '';
 		model_name = '';
 		expand_normal_region = false;

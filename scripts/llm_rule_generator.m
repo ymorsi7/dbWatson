@@ -65,58 +65,54 @@ function prompt = generate_prompt(metrics, patterns, model_name, original_field_
 end
 
 function response = call_openai(prompt)
-    try
-        % Properly format headers as Mx2 cell array
-        headers = {
-            'Authorization', ['Bearer ' getenv('OPENAI_API_KEY')]
-            'Content-Type', 'application/json'
-        };
-        
-        % Set options with increased timeout
-        options = weboptions('HeaderFields', headers, ...
-            'MediaType', 'application/json', ...
-            'Timeout', 60);  % Increase timeout to 60 seconds
-        
-        % Format the request body according to OpenAI's API specification
-        messages = {
-            struct('role', 'system', 'content', 'You are an AI assistant analyzing database metrics and patterns. Provide clear, concise rules that explain anomalies in the data.')
-            struct('role', 'user', 'content', prompt)
-        };
-        
-        data = struct(...
-            'model', 'gpt-4-turbo-preview', ...
-            'messages', {messages}, ...
-            'temperature', 0.7, ...
-            'max_tokens', 1000);
-        
-        % Make the API call with the struct directly
-        response = webwrite('https://api.openai.com/v1/chat/completions', data, options);
-        
-        % Extract the response content
-        if isfield(response, 'choices') && ~isempty(response.choices) && isfield(response.choices(1), 'message')
-            response = response.choices(1).message.content;
-        else
-            error('Unexpected API response format');
-        end
-    catch e
-        if contains(e.message, 'SSL')
-            % If SSL error, try with certificate verification disabled
-            warning('SSL verification failed. Attempting with verification disabled...');
+    max_retries = 3;
+    base_delay = 2;  % Base delay in seconds
+    
+    for retry = 1:max_retries
+        try
+            % Headers and options setup remains the same
+            headers = {
+                'Authorization', ['Bearer ' getenv('OPENAI_API_KEY')]
+                'Content-Type', 'application/json'
+            };
+            
             options = weboptions('HeaderFields', headers, ...
-                'CertificateFilename', '', ...
                 'MediaType', 'application/json', ...
                 'Timeout', 60);
             
+            messages = {
+                struct('role', 'system', 'content', 'You are an AI assistant analyzing database metrics and patterns.')
+                struct('role', 'user', 'content', prompt)
+            };
+            
+            data = struct(...
+                'model', 'gpt-4-turbo-preview', ...
+                'messages', {messages}, ...
+                'temperature', 0.7, ...
+                'max_tokens', 1000);
+            
+            % Make API call
             response = webwrite('https://api.openai.com/v1/chat/completions', data, options);
-            if isfield(response, 'choices') && ~isempty(response.choices) && isfield(response.choices(1), 'message')
+            
+            if isfield(response, 'choices') && ~isempty(response.choices)
                 response = response.choices(1).message.content;
-            else
-                error('Unexpected API response format');
+                return;  % Success - exit function
             end
-        else
+            
+        catch e
+            if contains(e.message, '429')  % Rate limit error
+                if retry < max_retries
+                    delay = base_delay * (2^(retry-1));  % Exponential backoff
+                    fprintf('Rate limited. Waiting %.1f seconds before retry %d/%d...\n', ...
+                        delay, retry, max_retries);
+                    pause(delay);
+                    continue;
+                end
+            end
             rethrow(e);
         end
     end
+    error('Failed to get response after %d retries', max_retries);
 end
 
 function [rules, predicates] = parse_llm_rules(response, field_names)
