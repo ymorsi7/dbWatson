@@ -49,37 +49,38 @@ function plot_comprehensive_analysis(conf_llm, fscore_llm, case_names)
     sorted_fscore = fscore_llm(idx);
     sorted_names = case_names(idx);
     
-    % Define quadrants for label placement with more spread
-    quadrants = [
-        [90, 98];  % top right
-        [10, 98];  % top left
-        [10, 80];  % upper middle left
-        [90, 80];  % upper middle right
-        [10, 60];  % lower middle left
-        [90, 60];  % lower middle right
-        [10, 40];  % bottom left
-        [90, 40];  % bottom right
-        [50, 20];  % bottom center
-        [50, 98]   % top center
-    ];
-    
-    % Place labels in predefined positions
+    % Place labels in predefined positions with better spacing
     for i = 1:length(sorted_names)
         x = sorted_conf(i);
         y = sorted_fscore(i);
         
-        % Choose quadrant based on point position
-        label_x = quadrants(i,1);
-        label_y = quadrants(i,2);
+        % Calculate base position based on point location
+        if x > 50
+            base_x = 95;  % right side
+            align = 'left';
+        else
+            base_x = 5;   % left side
+            align = 'right';
+        end
+        
+        % Calculate y position with more spacing
+        base_y = 95 - (i-1) * 8;  % Start from top, increment down by 8 units
+        
+        % Adjust positions to prevent overlap
+        if i > 1 && abs(base_y - prev_y) < 10
+            base_y = prev_y - 10;  % Ensure minimum 10-unit vertical spacing
+        end
         
         % Draw connection line
-        plot([x label_x], [y label_y], ':', 'Color', [0.7 0.7 0.7]);
+        plot([x base_x], [y base_y], ':', 'Color', [0.7 0.7 0.7]);
         
         % Add label with background
-        text(label_x, label_y, sorted_names{i}, ...
-             'FontSize', 8, 'HorizontalAlignment', 'center', ...
+        text(base_x, base_y, sorted_names{i}, ...
+             'FontSize', 8, 'HorizontalAlignment', align, ...
              'BackgroundColor', [1 1 1 0.95], 'EdgeColor', [0.8 0.8 0.8], ...
              'Margin', 2);
+        
+        prev_y = base_y;  % Store current y position for next iteration
     end
     
     title('Confidence vs F-score Correlation', 'FontWeight', 'bold', 'FontSize', 12);
@@ -104,18 +105,54 @@ function plot_comprehensive_analysis(conf_llm, fscore_llm, case_names)
     scatter(2*ones(size(fscore_llm)) + (rand(size(fscore_llm))-0.5)*jitter, fscore_llm, 50, ...
            fscore_color, 'filled', 'MarkerFaceAlpha', 0.6);
     
-    % Add point labels with better positioning
+    % Define label positions for both confidence and f-score points
+    label_positions_conf = [
+        0.3, 95;  % top left
+        0.3, 85;  % upper left
+        0.3, 75;  % middle left
+        0.3, 65;  % lower left
+        0.3, 55;  % bottom left
+    ];
+    
+    label_positions_fscore = [
+        2.7, 95;  % top right
+        2.7, 85;  % upper right
+        2.7, 75;  % middle right
+        2.7, 65;  % lower right
+        2.7, 55;  % bottom right
+    ];
+    
+    % Add point labels with improved positioning
     for i = 1:length(case_names)
         % Label confidence points
-        text(1 + (rand-0.5)*jitter, conf_llm(i), case_names{i}, ...
-             'FontSize', 7, 'HorizontalAlignment', 'right', ...
-             'VerticalAlignment', 'middle', 'Rotation', 45, ...
-             'BackgroundColor', [1 1 1 0.9]);
+        x_conf = 1 + (rand-0.5)*jitter;
+        y_conf = conf_llm(i);
+        x_label = label_positions_conf(mod(i-1, size(label_positions_conf,1))+1, 1);
+        y_label = label_positions_conf(mod(i-1, size(label_positions_conf,1))+1, 2);
+        
+        % Draw connection line for confidence
+        plot([x_conf x_label], [y_conf y_label], ':', 'Color', [0.7 0.7 0.7], 'LineWidth', 0.5);
+        
+        % Add confidence label
+        text(x_label, y_label, case_names{i}, ...
+             'FontSize', 8, 'HorizontalAlignment', 'right', ...
+             'BackgroundColor', [1 1 1 0.9], 'EdgeColor', [0.8 0.8 0.8], ...
+             'Margin', 2);
+        
         % Label F-score points
-        text(2 + (rand-0.5)*jitter, fscore_llm(i), case_names{i}, ...
-             'FontSize', 7, 'HorizontalAlignment', 'right', ...
-             'VerticalAlignment', 'middle', 'Rotation', 45, ...
-             'BackgroundColor', [1 1 1 0.9]);
+        x_fscore = 2 + (rand-0.5)*jitter;
+        y_fscore = fscore_llm(i);
+        x_label = label_positions_fscore(mod(i-1, size(label_positions_fscore,1))+1, 1);
+        y_label = label_positions_fscore(mod(i-1, size(label_positions_fscore,1))+1, 2);
+        
+        % Draw connection line for f-score
+        plot([x_fscore x_label], [y_fscore y_label], ':', 'Color', [0.7 0.7 0.7], 'LineWidth', 0.5);
+        
+        % Add f-score label
+        text(x_label, y_label, case_names{i}, ...
+             'FontSize', 8, 'HorizontalAlignment', 'left', ...
+             'BackgroundColor', [1 1 1 0.9], 'EdgeColor', [0.8 0.8 0.8], ...
+             'Margin', 2);
     end
     
     title('Score Distributions', 'FontWeight', 'bold', 'FontSize', 12);
