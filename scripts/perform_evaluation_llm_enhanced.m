@@ -1,6 +1,16 @@
 function [confidence, fscore] = perform_evaluation_llm_enhanced(dataset_name, num_discrete, diff_threshold, abnormal_multiplier)
-    % Load dataset
-    data = load(['datasets/' dataset_name]);
+    % Check if OPENAI_API_KEY is set
+    if isempty(getenv('OPENAI_API_KEY'))
+        error('OPENAI_API_KEY environment variable is not set');
+    end
+    
+    % Load dataset with error handling
+    try
+        data = load(['datasets/' dataset_name]);
+    catch e
+        error('Dataset not found: %s. Error: %s', dataset_name, e.message);
+    end
+    
     model_directory = [pwd '/causal_models'];
     mkdir(model_directory);
     

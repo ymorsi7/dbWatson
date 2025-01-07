@@ -6,11 +6,18 @@ function perform_evaluation_single_causal_models(dataset_name)
     % Get original results
     [original_conf, original_fscore] = evaluate_original_models(dataset_name);
     
-    % Get LLM results for comparison
+    % Try both LLM evaluation methods
     has_llm_results = false;
     try
         if ~isempty(getenv('OPENAI_API_KEY'))
-            [llm_conf, llm_fscore] = perform_evaluation_llm_enhanced(dataset_name);
+            % Try perform_evaluation_llm_enhanced first
+            try
+                [llm_conf, llm_fscore] = perform_evaluation_llm_enhanced(dataset_name);
+            catch e1
+                warning('perform_evaluation_llm_enhanced failed, trying get_llm_results');
+                [llm_conf, llm_fscore] = get_llm_results(dataset_name);
+            end
+            
             if ~isempty(llm_fscore) && any(llm_fscore ~= 0)
                 has_llm_results = true;
             else
@@ -20,7 +27,7 @@ function perform_evaluation_single_causal_models(dataset_name)
             warning('OPENAI_API_KEY not set - skipping LLM evaluation');
         end
     catch e
-        warning('LLM evaluation failed: %s', e.message);
+        warning('All LLM evaluation methods failed: %s', e.message);
     end
     
     % Plot comparison
