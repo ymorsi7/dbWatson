@@ -5,6 +5,8 @@ classdef ExperimentParameter
 		abnormal_multiplier = 10;
 		create_model = false;
 		use_llm_rules = false;
+		llm_only = false;
+		current_rules = [];
 		cause_string = '';
 		model_name = '';
 		expand_normal_region = false;

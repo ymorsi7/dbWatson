@@ -18,32 +18,18 @@ function [explanation, model] = run_dbsherlock(dataset, abnormalIdx, normalIdx, 
     end
     
     % Constants
-    NORMAL_PARTITION = 1;
-    ABNORMAL_PARTITION = 2;
     NUMERIC = 0;
     CATEGORICAL = 1;
     
-    % Check if we should use LLM rules first
-    if exp_param.use_llm_rules && isfield(exp_param, 'current_rules') && ~isempty(exp_param.current_rules)
+    % Generate predicates
+    predicates = {};
+    if exp_param.use_llm_rules && ~isempty(exp_param.current_rules)
         predicates = exp_param.current_rules;
-        goto_evaluation = true;
     else
-        goto_evaluation = false;
-        % Generate predicates from data
-        predicates = {};
-        attribute_types = zeros(size(field_names, 2), 1);
-        
         % Process data and generate predicates
         for i = 3:length(field_names)  % Skip first two columns
             values = data(:, i);
             if isnumeric(values)
-                attribute_types(i) = NUMERIC;
-            else
-                attribute_types(i) = CATEGORICAL;
-            end
-            
-            % Generate partitions and boundaries
-            if attribute_types(i) == NUMERIC
                 [partitions, boundaries] = generate_partitions(values, abnormalIdx, normalIdx);
                 predicates = add_numeric_predicates(predicates, field_names{i}, partitions, boundaries, i);
             else
@@ -52,11 +38,71 @@ function [explanation, model] = run_dbsherlock(dataset, abnormalIdx, normalIdx, 
         end
     end
     
-    % Rest of the function remains the same
-    [reference lines 500-649 from scripts/run_dbsherlock.m]
+    % Load existing causal models
+    causalModels = loadCausalModels_Combiner();
+    
+    % Initialize explanation structure
+    explanation = cell(size(causalModels, 2), 5);  % [cause, confidence, precision, f1_score, recall]
+    
+    % Evaluate predicates against each causal model
+    for i = 1:size(causalModels, 2)
+        if isempty(causalModels{i}) || ~isfield(causalModels{i}, 'predicates')
+            continue;
+        end
+        
+        model_predicates = causalModels{i}.predicates;
+        matched_predicates = 0;
+        total_predicates = size(predicates, 1);
+        
+        % Compare predicates
+        for j = 1:size(predicates, 1)
+            for k = 1:size(model_predicates, 1)
+                if strcmp(predicates{j,2}, model_predicates{k,2})
+                    matched_predicates = matched_predicates + 1;
+                    break;
+                end
+            end
+        end
+        
+        % Calculate metrics
+        if total_predicates > 0 && size(model_predicates, 1) > 0
+            precision = matched_predicates / total_predicates;
+            recall = matched_predicates / size(model_predicates, 1);
+            if (precision + recall) > 0
+                f1_score = 2 * (precision * recall) / (precision + recall);
+            else
+                f1_score = 0;
+            end
+            confidence = f1_score;  % Use F1-score as confidence
+            
+            % Store results
+            explanation{i,1} = causalModels{i}.cause;
+            explanation{i,2} = confidence * 100;  % Convert to percentage
+            explanation{i,3} = precision * 100;
+            explanation{i,4} = f1_score * 100;
+            explanation{i,5} = recall * 100;
+        end
+    end
+    
+    % Remove empty rows and sort by confidence
+    explanation = explanation(~cellfun(@isempty, explanation(:,1)), :);
+    if ~isempty(explanation)
+        [~, sortIdx] = sort(cell2mat(explanation(:,2)), 'descend');
+        explanation = explanation(sortIdx, :);
+    end
+    
+    % Create and save model if requested
+    if exp_param.create_model
+        model = struct('predicates', predicates, 'cause', exp_param.cause_string);
+        if ~isempty(modelName)
+            save(fullfile(model_directory, [modelName '.mat']), 'model');
+        end
+    else
+        model = [];
+    end
 end
 
-% Helper functions moved outside main function
+% Helper functions
 function [partitions, boundaries] = generate_partitions(values, abnormalIdx, normalIdx)
     % Implementation of partition generation
     partitions = ones(1, length(values));  % Default to NORMAL
