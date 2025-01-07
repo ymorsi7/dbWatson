@@ -27,19 +27,40 @@ function [confidence, fscore] = perform_evaluation_llm_enhanced(dataset_name, nu
     exp_param.abnormal_multiplier = abnormal_multiplier;
     exp_param.create_model = true;
     exp_param.use_llm_rules = true;
+    exp_param.llm_only = true;  % Force using only LLM rules
     
     fprintf('Starting evaluation with %d cases...\n', num_case);
     
-    % First generate rules for each case
+    % Generate and store LLM rules for all cases first
+    llm_rules = cell(num_case, 1);
     for i = 1:num_case
         exp_param.cause_string = data.causes{i};
         exp_param.model_name = ['llm_cause' num2str(i)];
         fprintf('Generating rules for case %d: %s\n', i, exp_param.cause_string);
-        run_dbsherlock(data.test_datasets{i}, data.abnormal_regions{i}, data.normal_regions{i}, [], exp_param);
+        
+        % Generate rules using LLM
+        [rules, predicates] = llm_rule_generator(data.test_datasets{i}, ...
+            data.abnormal_regions{i}, data.normal_regions{i}, exp_param);
+        
+        % Store both rules and predicates
+        llm_rules{i}.rules = rules;
+        llm_rules{i}.predicates = predicates;
+        
+        % Validate rules were generated
+        if isempty(rules) || isempty(predicates)
+            warning('No rules generated for case %d', i);
+            continue;
+        end
     end
     
-    % Then evaluate each case
+    % Then evaluate using stored rules
     for i = 1:num_case
+        if isempty(llm_rules{i}) || isempty(llm_rules{i}.predicates)
+            warning('Skipping evaluation for case %d - no valid rules', i);
+            continue;
+        end
+        
+        exp_param.current_rules = llm_rules{i}.predicates;
         test_data = data.test_datasets{i};
         abnormal_regions = data.abnormal_regions{i};
         normal_regions = data.normal_regions{i};
