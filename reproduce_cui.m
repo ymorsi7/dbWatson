@@ -19,11 +19,13 @@ function reproduce_cui
     fprintf('\t4. Effect of Incorporating Domain Knowledge (Section 8.6)\n');
     fprintf('\t5. Explaining Compound Situations (Section 8.7)\n');
     fprintf('\t6. Run all of the above (ETC: 4-5 hours)\n');
+    fprintf('\t7. LLM-Enhanced Analysis (New)\n');
+    fprintf('\t8. Run all including LLM analysis (ETC: 5-6 hours)\n');
     fprintf('\n');
 
     experiment_option = input(experiment_prompt, 's');
     experiment_option = str2num(experiment_option);
-    if isempty(experiment_option) || experiment_option < 1 || experiment_option > 6
+    if isempty(experiment_option) || experiment_option < 1 || experiment_option > 8
       return;
     else
       % choose dataset
@@ -45,6 +47,12 @@ function reproduce_cui
         dataset_name = 'dbsherlock_dataset_tpcc_16w.mat';
       case 6
         fprintf('Running all experiments...\n');
+        dataset_name = 'dbsherlock_dataset_tpcc_16w.mat';
+      case 7
+        fprintf('Running LLM-Enhanced Analysis...\n');
+        dataset_name = 'dbsherlock_dataset_tpcc_16w.mat';
+      case 8
+        fprintf('Running all including LLM analysis...\n');
         dataset_name = 'dbsherlock_dataset_tpcc_16w.mat';
       otherwise
         return;
@@ -421,6 +429,22 @@ function reproduce_cui
         title(axes_exp5, 'Experiment 5 (Sec 8.7): Explaining Compound Situations (Figure 10)');
         set(fig_exp5, 'Position', [60 60 1024 768]);
 
+      case 7
+        fprintf('Running LLM-Enhanced Analysis...\n');
+        dataset_name = 'dbsherlock_dataset_tpcc_16w.mat';
+        data = load(['datasets/' dataset_name]);
+        causes = data.causes;
+        % Implementation of LLM-Enhanced Analysis
+        % This is a placeholder and should be replaced with the actual implementation
+        fprintf('LLM-Enhanced Analysis not implemented yet.\n');
+      case 8
+        fprintf('Running all including LLM analysis...\n');
+        dataset_name = 'dbsherlock_dataset_tpcc_16w.mat';
+        data = load(['datasets/' dataset_name]);
+        causes = data.causes;
+        % Implementation of LLM-Enhanced Analysis
+        % This is a placeholder and should be replaced with the actual implementation
+        fprintf('LLM-Enhanced Analysis not implemented yet.\n');
       otherwise
         return;
       end
