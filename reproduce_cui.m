@@ -1,7 +1,7 @@
 function reproduce_cui
   warning('off', 'all');
   addpath './scripts'
-  experiment_prompt     = 'Select an experiment to reproduce (1-6 or other input to exit): ';
+  experiment_prompt     = 'Select an experiment to reproduce (1-7 or other input to exit): ';
   dataset_prompt        = 'Select an input dataset (1-3 or other input to return)        : ';
   dataset_name          = '';
   compound_dataset_name = 'dbsherlock_dataset_tpcc_16w.mat';
@@ -434,9 +434,26 @@ function reproduce_cui
         dataset_name = 'dbsherlock_dataset_tpcc_16w.mat';
         data = load(['datasets/' dataset_name]);
         causes = data.causes;
-        % Implementation of LLM-Enhanced Analysis
-        % This is a placeholder and should be replaced with the actual implementation
-        fprintf('LLM-Enhanced Analysis not implemented yet.\n');
+        
+        % Run LLM analysis
+        [conf_llm, fscore_llm] = perform_evaluation_causal_models(dataset_name, 500, 0.2, 10, 1, 1);
+        moc = calculateMarginOfConfidence(conf_llm);
+        fscore = calculateMeanConfidence(fscore_llm);
+        
+        % Plot results
+        hold off;
+        val = horzcat(moc', fscore');
+        bar(val);
+        axes_llm = gca;
+        fig_llm = gcf;
+        xlabel(axes_llm, 'Test Cases');
+        ylabel(axes_llm, 'Confidence/F1-measure (%)');
+        set(axes_llm, 'XtickLabel', causes);
+        set(axes_llm, 'XtickLabelRotation', 45);
+        set(axes_llm, 'FontSize', 18);
+        legend(axes_llm, 'LLM Confidence', 'LLM F1-Measure');
+        title(axes_llm, 'LLM-Enhanced Analysis Results');
+        set(fig_llm, 'Position', [0 0 1024 768]);
       case 8
         fprintf('Running all including LLM analysis...\n');
         dataset_name = 'dbsherlock_dataset_tpcc_16w.mat';

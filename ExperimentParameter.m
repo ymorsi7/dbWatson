@@ -10,6 +10,11 @@ classdef ExperimentParameter
         correct_filter_list = [];
         introduce_lag = false;
         use_llm_rules = false;
+        expand_normal_region = false;
+        expand_normal_size = 0;
+        lag_min = 0;
+        lag_max = 0;
+        find_lag = false;
     end
     
     methods
